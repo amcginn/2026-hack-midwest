@@ -3,6 +3,17 @@
   margin: 0 auto;
   padding: 2rem 1.5rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+// Basic narrow-viewport handling -- this app was built assuming a
+// normal desktop browser window and had no responsive treatment at
+// all; found via screenshot review, 2026-10-11, where a narrow capture
+// clipped the picker dropdowns and a banner's text with no wrapping.
+@media (max-width: 480px) {
+  .app-shell {
+    padding: 1rem 0.75rem;
+  }
 }
 
 h1 {

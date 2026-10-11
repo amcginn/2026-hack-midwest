@@ -2,6 +2,10 @@
   margin-top: 1.5rem;
 }
 
+.dashboard * {
+  box-sizing: border-box;
+}
+
 .hint,
 .muted {
   color: #666;
