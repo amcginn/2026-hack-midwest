@@ -1619,3 +1619,27 @@ pressure later.
   `/api/facilities/:id/evaluate` end-to-end against the running backend
   with the `Origin` header a browser would send. Production build
   (`ng build`) and dev server (`ng serve`) both confirmed working.
+- **2026-10-11**: User caught a serious bug live, from a screenshot: a
+  transient NWS 500 error produced a green "Normal Operations" banner
+  instead of surfacing the failure, because `index.ts` treated "no
+  government-tier score" as always meaning "legitimately nothing to
+  report," without distinguishing that from "the primary source
+  errored, we have no data at all." This directly violates the
+  system's own "absence is not evidence of normalcy" principle (section
+  2) in its most dangerous form -- not just omitting a null signal from
+  math, but actively mislabeling a failure as a confirmed-clear state.
+  **Fixed**: added a new `unknown` posture (distinct from `normal`),
+  gray/neutral diagonal-stripe styling (deliberately not green or red,
+  since it means "we don't know," not "it's fine" or "it's bad").
+  `index.ts` now checks whether NWS specifically appears in
+  `sourceErrors` and routes to `unknown` rather than `normal` in that
+  case. Rationale template now has a dedicated error-case message
+  telling the manager explicitly not to treat it as "all clear" and to
+  verify manually. Moved the source-error banner to render above the
+  posture header (previously below it, meaning the misleading green
+  banner was the first thing visible) and restyled it as a prominent
+  red-bordered warning box rather than plain red text. **Verified live
+  by deliberately breaking the NWS adapter's base URL**, confirming the
+  dashboard correctly showed "Status Unknown — Verify Manually" with
+  the real fetch error surfaced, then reverted and confirmed normal
+  operation resumed.

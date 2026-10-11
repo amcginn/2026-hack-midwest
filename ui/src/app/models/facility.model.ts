@@ -45,7 +45,13 @@ export interface SourceOutcome {
   rawRef?: string;
 }
 
-export type Posture = 'normal' | 'delay' | 'early_dismissal' | 'telework_unscheduled_leave' | 'closure';
+export type Posture =
+  | 'normal'
+  | 'delay'
+  | 'early_dismissal'
+  | 'telework_unscheduled_leave'
+  | 'closure'
+  | 'unknown';
 
 export interface NotificationRecipient {
   employeeId: string;

@@ -12,7 +12,13 @@
  * from real data that they need adjusting.
  */
 
-export type Posture = "normal" | "delay" | "early_dismissal" | "telework_unscheduled_leave" | "closure";
+export type Posture =
+  | "normal"
+  | "delay"
+  | "early_dismissal"
+  | "telework_unscheduled_leave"
+  | "closure"
+  | "unknown";
 
 export function scoreToPosture(score: number): Posture {
   if (score < 0.5) return "normal";
@@ -28,4 +34,5 @@ export const POSTURE_LABELS: Record<Posture, string> = {
   early_dismissal: "Early Dismissal",
   telework_unscheduled_leave: "Telework / Unscheduled Leave",
   closure: "Closure",
+  unknown: "Status Unknown — Verify Manually",
 };

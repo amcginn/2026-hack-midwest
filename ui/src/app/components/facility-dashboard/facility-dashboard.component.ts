@@ -9,6 +9,7 @@ const POSTURE_CLASS: Record<Posture, string> = {
   early_dismissal: 'posture-early-dismissal',
   telework_unscheduled_leave: 'posture-telework',
   closure: 'posture-closure',
+  unknown: 'posture-unknown',
 };
 
 /**

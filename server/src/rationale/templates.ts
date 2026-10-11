@@ -23,7 +23,12 @@ export function buildRationale(
   posture: Posture,
   drivingSource: SourceOutcome | undefined,
   supplementalScoredSources: SourceOutcome[],
+  governmentSourceErrored = false,
 ): string {
+  if (governmentSourceErrored) {
+    return `The primary government hazard data source (NWS) could not be reached for ${facilityName}. Current conditions are UNKNOWN -- this is not a confirmed "all clear" and should not be treated as normal operations. Please verify conditions manually (e.g. weather.gov) before making a decision, and retry this system shortly.`;
+  }
+
   if (!drivingSource) {
     return `No active government-source hazard alert is currently on record for ${facilityName}. Normal operations are recommended, but this reflects an absence of alert data rather than a confirmed "all clear" -- continue monitoring, and review supplemental data below.`;
   }

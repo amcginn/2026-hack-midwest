@@ -12,6 +12,26 @@
   font-weight: 600;
 }
 
+.source-errors-banner {
+  background: #fff3cd;
+  border: 2px solid #b71c1c;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  color: #7a1313;
+
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 1.05rem;
+  }
+
+  p {
+    margin: 0.15rem 0;
+    font-size: 0.9rem;
+  }
+}
+
 .posture-header {
   padding: 1rem 1.5rem;
   border-radius: 8px;
@@ -47,6 +67,15 @@
 }
 .posture-closure {
   background: #b71c1c;
+}
+.posture-unknown {
+  background: repeating-linear-gradient(
+    45deg,
+    #616161,
+    #616161 10px,
+    #424242 10px,
+    #424242 20px
+  );
 }
 
 section {

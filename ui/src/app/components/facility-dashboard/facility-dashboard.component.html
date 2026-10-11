@@ -6,6 +6,15 @@
   } @else if (error) {
     <p class="error">{{ error }}</p>
   } @else if (evaluation) {
+    @if (evaluation.sourceErrors.length > 0) {
+      <section class="source-errors-banner">
+        <strong>⚠ Data source failure — do not treat this recommendation as confirmed</strong>
+        @for (err of evaluation.sourceErrors; track err.source) {
+          <p>{{ err.source }}: {{ err.error }}</p>
+        }
+      </section>
+    }
+
     <header class="posture-header" [ngClass]="postureClass(evaluation.posture)">
       <h2>{{ evaluation.facilityName }}</h2>
       <div class="posture-label">{{ evaluation.postureLabel }}</div>
@@ -18,15 +27,6 @@
       <h3>Rationale</h3>
       <p>{{ evaluation.rationale }}</p>
     </section>
-
-    @if (evaluation.sourceErrors.length > 0) {
-      <section class="source-errors">
-        <h3>Source Errors</h3>
-        @for (err of evaluation.sourceErrors; track err.source) {
-          <p class="error">{{ err.source }}: {{ err.error }}</p>
-        }
-      </section>
-    }
 
     <section class="sources government">
       <h3>Government Sources (Primary)</h3>

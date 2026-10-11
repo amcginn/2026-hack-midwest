@@ -156,9 +156,29 @@ app.get("/api/facilities/:facilityId/evaluate", async (req: Request, res: Respon
 
   const { recommendedScore, drivingSource, experimentalBlendedScore, scoredSources, excludedSources } =
     aggregateSources(outcomes);
-  const posture = recommendedScore !== undefined ? scoreToPosture(recommendedScore) : "normal";
+
+  // CRITICAL: "no government-tier score" has two very different causes
+  // that must NOT be conflated. (1) NWS was reached successfully and
+  // legitimately has no active alert for this facility -- that's a
+  // real "nothing to report," reasonably treated as normal. (2) NWS
+  // *errored* (network failure, 500, timeout) -- we have NO IDEA what
+  // the actual conditions are, and defaulting to "normal" would be
+  // actively misleading (confirmed live, 2026-10-11: a transient NWS
+  // 500 produced a green "Normal Operations" banner while the real
+  // status was unknown, not confirmed-clear). Only case (1) is allowed
+  // to resolve to "normal"; case (2) must resolve to "unknown".
+  const governmentSourceErrored = sourceErrors.some((e) => e.source === "NWS");
+  let posture: ReturnType<typeof scoreToPosture>;
+  if (recommendedScore !== undefined) {
+    posture = scoreToPosture(recommendedScore);
+  } else if (governmentSourceErrored) {
+    posture = "unknown";
+  } else {
+    posture = "normal";
+  }
+
   const supplementalScored = scoredSources.filter((s) => s.tier === "supplemental");
-  const rationale = buildRationale(facility.name, posture, drivingSource, supplementalScored);
+  const rationale = buildRationale(facility.name, posture, drivingSource, supplementalScored, governmentSourceErrored);
   const recipients = getNotificationRecipients(facilityId, date);
 
   res.json({
