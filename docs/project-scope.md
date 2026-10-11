@@ -1567,6 +1567,31 @@ stretch (config UI for other registry internals, AWS migration,
 presentation/demo prep) -- see later sections of this doc and the
 Decision Log for anything added after this point.
 
+**Post-submission fixes (2026-10-11, after the live demo)**:
+1. Day-of-week added to notification message text (`notification/
+   templates.ts` `formatLongDate`/`formatShortDate`) -- was previously
+   just the raw `YYYY-MM-DD` string, forcing the reader to do date
+   math to confirm it was actually "today."
+2. **Essential personnel on leave are no longer notified** -- found
+   via user question: "isn't 'on leave' just a general status? even
+   if someone isn't essential, if they're on leave, they wouldn't
+   necessarily need an emergency alert." Correct insight: `leave` is
+   not a facility-posture exception, it's a general not-working-today
+   status, irrelevant to essential-personnel status. Fixed in
+   `repository/applicability.ts`'s `getNotificationRecipients()` --
+   previously this function added EVERY essential employee not
+   already included with no schedule check at all, silently notifying
+   someone on approved leave with the same label as someone on a
+   completely normal day. Now: `leave` excludes regardless of
+   essential status; `on_detail`/`telework` still include essential
+   personnel (they're genuinely still working, just elsewhere that
+   day) under a new, clearly-labeled reason code
+   (`essential_despite_schedule_exception`), with the schedule note
+   surfaced so it's visible WHY/where. Verified live both branches
+   (temporarily seeded then removed a test leave entry and a test
+   telework entry for the same essential employee, confirmed excluded
+   vs. included+labeled correctly in each case).
+
 Also closed this round, found via user manual-testing/screenshot review
 (not originally on this list, but real fixes, not scope creep):
 decision-record spam -> redesigned to explicit-action model; decision

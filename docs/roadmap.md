@@ -4,6 +4,11 @@ Captured 2026-10-11, post-submission, for reference if this project is
 picked back up or shared. Items are grouped by effort, not priority --
 read the "why" on each before assuming order.
 
+**Already fixed, same day, not in this list anymore**: day-of-week in
+notification messages, and essential personnel on leave no longer
+being silently notified -- see `project-scope.md`'s "Post-submission
+fixes" note for the full detail.
+
 AWS hosting is kept OUT of the live app for now (deliberate choice,
 see `project-scope.md` section 6's "AWS Migration Plan" for the full
 mapping table and the real test results from this session), but the

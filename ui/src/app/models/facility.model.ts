@@ -59,7 +59,8 @@ export interface NotificationRecipient {
   phone: string;
   email: string;
   essentialPersonnel: boolean;
-  reason: 'home_facility_normal' | 'in_office_today_exception';
+  reason: 'home_facility_normal' | 'in_office_today_exception' | 'essential_despite_schedule_exception';
+  scheduleNote?: string;
   longFormMessage: string;
   shortFormMessage: string | null;
 }

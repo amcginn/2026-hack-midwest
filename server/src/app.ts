@@ -427,6 +427,11 @@ async function runEvaluation(facilityId: string, date: string) {
       email: r.employee.email,
       essentialPersonnel: r.employee.essentialPersonnel,
       reason: r.reason,
+      // Where an essential_despite_schedule_exception / in_office_today
+      // exception recipient actually is today -- without this, "notified
+      // despite a schedule exception" has no explanation of WHY/where
+      // (confirmed missing from the response entirely before this fix).
+      scheduleNote: r.scheduleNote,
       longFormMessage: messages.longForm,
       shortFormMessage: messages.shortForm,
     };

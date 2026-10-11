@@ -437,6 +437,10 @@ export class FacilityDashboardComponent implements OnChanges {
     return TODAY_STATUS_LABELS[status] ?? status;
   }
 
+  notificationReasonLabel(reason: NotificationRecipient['reason']): string {
+    return NOTIFICATION_REASON_LABELS[reason] ?? reason;
+  }
+
   remoteStatusLabel(status: string): string {
     return REMOTE_STATUS_LABELS[status] ?? status;
   }
@@ -489,4 +493,17 @@ const REMOTE_STATUS_LABELS: Record<string, string> = {
   in_office: 'In office',
   full_remote: 'Full remote',
   hybrid: 'Hybrid',
+};
+
+// Notification recipient "reason" column -- added
+// essential_despite_schedule_exception 2026-10-11 when the backend
+// stopped silently notifying essential personnel who were actually on
+// leave (not an exception worth notifying for at all -- see
+// repository/applicability.ts module doc) while still correctly
+// notifying essential staff who are on_detail/telework (still working,
+// just not here).
+const NOTIFICATION_REASON_LABELS: Record<string, string> = {
+  home_facility_normal: 'Normal roster',
+  in_office_today_exception: 'In office today (exception)',
+  essential_despite_schedule_exception: 'Essential — notified despite schedule exception',
 };

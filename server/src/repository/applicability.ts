@@ -21,10 +21,14 @@ import type { Employee, ScheduleStatus } from "./types";
 
 export interface ApplicableEmployee {
   employee: Employee;
-  /** Why this employee is included: their normal pattern, or a
-   * schedule exception. Surfaced in the decision record for
-   * auditability (section 1's "explainable, auditable rule"). */
-  reason: "home_facility_normal" | "in_office_today_exception";
+  /** Why this employee is included: their normal pattern, a schedule
+   * exception, or (new, 2026-10-11) essential personnel whose standing
+   * reporting requirement applies even though today's schedule would
+   * otherwise exclude them (on_detail/telework -- actively working
+   * elsewhere, just not at this facility). Surfaced in the decision
+   * record for auditability (section 1's "explainable, auditable
+   * rule"). */
+  reason: "home_facility_normal" | "in_office_today_exception" | "essential_despite_schedule_exception";
   scheduleNote?: string;
 }
 
@@ -68,10 +72,29 @@ export function getApplicableEmployees(facilityId: string, date: string): Applic
  * the home roster who wouldn't otherwise be included (e.g. an
  * essential employee who is full_remote still needs to know, since
  * their reporting requirement doesn't change with posture).
+ *
+ * EXCEPTION (fixed 2026-10-11, per user): "leave" is not a facility-
+ * posture exception, it's a general not-working-today status --
+ * irrelevant to essential-personnel status. An employee on approved
+ * leave doesn't need "the facility is closed" news regardless of
+ * whether their reporting requirement would otherwise be unaffected
+ * by weather, because they're not reporting for an unrelated reason
+ * already. `on_detail`/`telework` are different: the employee IS
+ * still working that day, just not physically at this facility, so an
+ * essential employee's standing requirement still makes sense to
+ * surface for those two statuses specifically. Previously this
+ * function added every essential employee not already included with
+ * NO check of today's schedule at all -- an essential employee on
+ * leave was silently notified and labeled identically to someone on
+ * their completely normal schedule, with no way to tell the two
+ * apart.
  */
 export function getNotificationRecipients(facilityId: string, date: string): ApplicableEmployee[] {
   const applicable = getApplicableEmployees(facilityId, date);
   const includedIds = new Set(applicable.map((a) => a.employee.employeeId));
+
+  const scheduleEntries = getScheduleEntries(facilityId, date);
+  const scheduleByEmployeeId = new Map(scheduleEntries.map((e) => [e.employeeId, e]));
 
   const result = [...applicable];
 
@@ -79,7 +102,14 @@ export function getNotificationRecipients(facilityId: string, date: string): App
     if (!employee.essentialPersonnel) continue;
     if (includedIds.has(employee.employeeId)) continue;
 
-    result.push({ employee, reason: "home_facility_normal" });
+    const scheduleEntry = scheduleByEmployeeId.get(employee.employeeId);
+    if (scheduleEntry?.status === "leave") continue; // on leave -- not notified, essential or not
+
+    result.push({
+      employee,
+      reason: scheduleEntry ? "essential_despite_schedule_exception" : "home_facility_normal",
+      scheduleNote: scheduleEntry?.locationNote,
+    });
     includedIds.add(employee.employeeId);
   }
 

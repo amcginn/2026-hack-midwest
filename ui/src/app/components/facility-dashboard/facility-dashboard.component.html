@@ -305,7 +305,12 @@
               <tr>
                 <td>{{ r.name }}</td>
                 <td>{{ r.essentialPersonnel ? 'Yes' : 'No' }}</td>
-                <td>{{ r.reason === 'in_office_today_exception' ? 'In office today (exception)' : 'Normal roster' }}</td>
+                <td>
+                  {{ notificationReasonLabel(r.reason) }}
+                  @if (r.scheduleNote) {
+                    <div class="schedule-note">{{ r.scheduleNote }}</div>
+                  }
+                </td>
                 <td>
                   <select [(ngModel)]="recipientChannel[r.employeeId]">
                     <option value="email">Email</option>
