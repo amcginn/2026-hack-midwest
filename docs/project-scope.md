@@ -348,6 +348,17 @@ this were a real production system."
   Demonstrates breadth of the data-source approach without overcommitting
   build time.
 
+**Current facility count (updated 2026-10-11)**: 5 facilities total,
+seeded with employees — Iowa Clinton (5 employees, lead demo), Iowa Des
+Moines (2 employees, added for picker variety), Montana Billings (1
+employee), Montana Great Falls (2 employees, added for picker variety
+and because it was one of the offices actively issuing Winter Storm
+Warnings during original scoping), Alabama Montgomery (0 employees,
+intentionally -- demonstrates the stretch-only NHC scenario slot and
+confirms the UI handles an empty roster correctly, not as a bug). See
+`data/synthetic/facilities.yaml` and `employees.yaml` for current
+authoritative state.
+
 **Facility → alert lookup pipeline:**
 1. Facility record stores a precise **lat/lon** (authoritative for the API)
    plus **human-readable identity fields** (authoritative for the manager
@@ -1028,19 +1039,16 @@ still surfacing timing information where a human needs it most: right
 next to the thing it qualifies.
 
 ### Open Questions
-- [ ] Notification `recipients`/`message`/`channels` fields in the output
-      object above are still placeholders (empty array/strings). The
-      *logic* for who's included is already defined — section 1's
-      "who's applicable at a facility today" rule (home roster minus
-      on_detail/telework/leave, plus any in_office_today exceptions,
-      plus essential personnel always) — but it hasn't been wired into
-      this output schema yet. Needs: populate `recipients` from that
-      rule, decide `message` templating (likely same approach as
-      `rationale` — small template set keyed by posture band +
-      essential/non-essential), decide `channels` routing rule (e.g.
-      essential personnel get SMS+email, others get email only — this
-      specific split was proposed early in scoping but never finalized
-      as a rule here).
+- [x] **Partially resolved (by implementation)**: `recipients` is fully
+      implemented and verified live -- `GET /evaluate`'s `notification.
+      recipients` and the roster endpoint both use the real
+      applicability rule from section 1 (home roster minus on_detail/
+      telework/leave, plus in_office_today exceptions, plus essential
+      personnel always). **Still genuinely open** (see section 7's gap
+      tracker): `message` (drafted notification text per recipient/
+      posture) and `channels` (routing rule, e.g. essential ->
+      SMS+email, others -> email-only) are both NOT built. This is
+      tracked as the #3 priority in section 7, not duplicated here.
 - [x] **Resolved 2026-10-11**: message/rationale text generation is
       **templated, not LLM-generated**. The combination space is small
       and finite (severity tier x certainty tier x posture band x urgency
@@ -1161,15 +1169,22 @@ direction. Not a gap being hidden; worth a one-line callout in the pitch
 the oversight view behind Cognito/IAM").
 
 ### Open Questions
-- [ ] Express vs Fastify (minor, low-stakes — pick whichever the user
-      has more muscle memory with; defaulting to Express as the more
-      ubiquitous choice unless told otherwise)
-- [ ] Exact DynamoDB-shaped key design for the in-memory repository
-      (partition/sort key naming) — needs to happen alongside actual
-      implementation, not purely on paper
-- [ ] Whether Angular codegen targets a hand-written OpenAPI spec for
-      the backend, or something lighter — needs a decision at
-      implementation time, not blocking the architecture decision itself
+- [x] **Resolved (by implementation)**: Express -- built, running,
+      verified live throughout. Fastify never needed.
+- [x] **Resolved (by implementation)**: in-memory repository layer
+      (`server/src/repository/`) keys facilities/employees/schedule by
+      `facilityId` as the natural partition key, matching the planned
+      DynamoDB shape. File-backed from `data/synthetic/*.yaml`, cached
+      in memory after first load (note: this means edits to the YAML
+      files require a server restart to take effect -- confirmed
+      live, 2026-10-11, when a schedule-note text edit didn't show up
+      until restart).
+- [x] **Resolved (by implementation)**: Angular models are hand-written
+      TypeScript (`ui/src/app/models/facility.model.ts`), manually kept
+      in sync with the backend response shape rather than codegen'd
+      from an OpenAPI spec. Reasonable for the hackathon's scope and
+      timeline; a real OpenAPI-driven codegen setup is a legitimate
+      production-roadmap item, not pursued here.
 
 ---
 
@@ -1239,27 +1254,33 @@ go stale like the deliverable fields did before this review caught it.
 - [ ] **GAP**: Channel routing (see above, same gap)
 
 ### Deliverable 4: The decision record
-- [x] **Resolved 2026-10-11.** Implemented in
+- [x] **Resolved 2026-10-11, redesigned same day.** Implemented in
       `server/src/repository/decisionRecord.ts`, persisted as append-
       only JSONL (`data/decision-records/records.jsonl`, gitignored —
-      runtime data, not source). Every `/evaluate` call builds and
-      appends a `DecisionRecord`: `recordId`, our own `evaluatedAt`,
-      full per-source inputs (each with its OWN `sourceReportedAt` —
-      the dual-timestamp distinction the user flagged, so "when we
-      looked" and "when the source itself last updated" are both
-      captured, not conflated), excluded/narrative inputs, notification
-      recipients, source errors, posture, and rationale. Retrieval
-      routes: `GET /api/decision-records` (all, newest first, optional
-      `?facilityId=`) and `GET /api/decision-records/:recordId`.
-      Verified live: appending (not overwriting) across multiple
-      evaluations, facility filtering, single-record lookup, and
-      resilience to a deliberately-corrupted line in the file (skipped
-      with a logged warning, not a crash). UI: new
-      `DecisionLogComponent`, expandable per-record cards showing
-      inputs/recipients/errors at the time of that specific decision,
-      embedded in the facility dashboard, auto-refreshes after each new
-      evaluation so the just-created record appears without a manual
-      reload.
+      runtime data, not source). **Current model (post-redesign)**:
+      `GET /api/facilities/:id/evaluate` is purely read-only and
+      persists NOTHING -- viewing/refreshing the dashboard is not a
+      decision. `POST /api/facilities/:id/decisions` is the ONLY route
+      that writes a record, representing an explicit human action.
+      It re-runs a fresh evaluation at the moment of the decision
+      (not stale client state), accepts an optional `decidedPosture`
+      override plus `decidedBy`/`notes`, and records BOTH
+      `recommendedPosture` (what the system suggested) and the actually
+      -decided `posture`, with a `wasOverridden` flag -- a human
+      overriding the system is a first-class, expected case per the
+      challenge's "the goal is not to automate the decision," not an
+      edge case. Each record also carries, per input, its own
+      `sourceReportedAt` (dual-timestamp distinction: "when we decided"
+      vs. "when the source itself last updated" -- NWS `effective`,
+      NWPS `validTime`, AQICN `time.iso`). Retrieval:
+      `GET /api/decision-records` (optional `?facilityId=`) and
+      `GET /api/decision-records/:recordId`. Resilient to a corrupted
+      line in the file (skipped with a logged warning, not a crash --
+      verified live). UI: "Record This Decision" form (posture
+      override dropdown, decided-by, notes, confirm button, clears on
+      successful submit) plus `DecisionLogComponent` showing expandable
+      per-record cards including `decidedBy`/`decisionNotes`/override
+      flag, embedded in the facility dashboard.
 
 ### Deliverable 5: Threshold defensibility
 - [x] Strong — CAP spec citations (official OASIS/NWS enumeration
@@ -1267,13 +1288,27 @@ go stale like the deliverable fields did before this review caught it.
       thresholds for the specific gauge in use. All real, all cited,
       all documented in section 3/4 with sources.
 
-### Net priority order for remaining time (per 2026-10-11 review)
-1. ~~Decision record persistence~~ — **done 2026-10-11**, see above
-2. Restore `thresholdCrossed` / `confidence` / `whatWouldChange` (was
-   designed, just needs re-implementing against the current response
-   shape) — **next up**
-3. Notification message + channel routing
-4. Display `accessibilityNotes` (trivial)
+### Net priority order for remaining time (updated 2026-10-11, end of day)
+1. ~~Decision record persistence~~ — **done**, redesigned same day to
+   be explicit-action-only (`POST /decisions`), not auto-persisted on
+   every view
+2. **Restore `thresholdCrossed` / `confidence` / `whatWouldChange`** —
+   was designed, just needs re-implementing against the current
+   response shape. **Still next up, highest remaining priority.**
+3. Notification message + channel routing (deliverable #3's remaining
+   gap)
+4. Display `accessibilityNotes` (trivial, still not done)
+
+Also closed this round, found via user manual-testing/screenshot review
+(not originally on this list, but real fixes, not scope creep):
+decision-record spam -> redesigned to explicit-action model; decision
+log stale-state bug on facility switch; misleading "Affected Today"
+roster column label -> renamed "Would Be Notified"; raw-enum text in a
+schedule note ("full_remote" inline) -> natural language; "no
+government data available" wasn't visually prominent -> new banner;
+decision form didn't clear on submit and didn't display decidedBy/
+notes -> both fixed; single-facility-per-state in the picker -> added
+Des Moines (IA) and Great Falls (MT).
 
 ### Confirmed behavior: evaluation is always against current-moment
 ### weather, regardless of requested schedule date (2026-10-11)
