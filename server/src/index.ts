@@ -39,22 +39,25 @@ app.get("/api/sources/nws", async (req: Request, res: Response) => {
 /**
  * Second integration slice: live river gauge data via NOAA's NWPS API.
  *
- * Example: GET /api/sources/usgs?lid=CMMI4
- * (Mississippi River at Camanche/Clinton, IA -- NWPS location ID,
- * confirmed to map to the same USGS site 05420500 we were querying
- * directly before)
+ * Accepts either a USGS site number or an NWPS location ID -- confirmed
+ * live via NWPS's own swagger spec and a direct test that both resolve
+ * to the same gauge.
+ *
+ * Examples:
+ *   GET /api/sources/usgs?identifier=05420500  (USGS site number)
+ *   GET /api/sources/usgs?identifier=CMMI4     (NWPS location ID)
  */
 app.get("/api/sources/usgs", async (req: Request, res: Response) => {
-  const lid = typeof req.query.lid === "string" ? req.query.lid : undefined;
+  const identifier = typeof req.query.identifier === "string" ? req.query.identifier : undefined;
 
-  if (!lid) {
-    res.status(400).json({ error: "lid query param is required (NWPS location ID, e.g. CMMI4)" });
+  if (!identifier) {
+    res.status(400).json({ error: "identifier query param is required (USGS site number or NWPS lid)" });
     return;
   }
 
   try {
-    const outcome = await evaluateUsgsGaugeHeight(lid);
-    res.json({ lid, outcome });
+    const outcome = await evaluateUsgsGaugeHeight(identifier);
+    res.json({ identifier, outcome });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     res.status(502).json({ error: "River gauge lookup failed", detail: message });

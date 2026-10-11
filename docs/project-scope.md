@@ -1492,3 +1492,16 @@ pressure later.
   earlier incorrect ~90%-of-wrong-river's-flood-stage result. Route
   signature changed from `siteId`+`floodStageFt` to `lid` (NWPS location
   ID) since NWPS supplies both the reading and thresholds in one call.
+- **2026-10-11**: User found the real NWPS OpenAPI spec
+  (`api.water.noaa.gov/nwps/v1/docs/swagger.json`), which I had not
+  located during my earlier guessing. Confirmed it's the real spec and
+  checked the `/gauges/{identifier}` path definition: the `identifier`
+  param explicitly accepts **either** the NWPS lid (e.g. "CMMI4") **or**
+  the raw USGS site number (e.g. "05420500") -- verified live, both
+  resolve to the identical gauge. Updated the adapter and route
+  (`/api/sources/usgs?identifier=`) to use this generic naming, since it
+  means facility records only need to store the widely-known USGS site
+  ID (the one actually named in the challenge text) and never need to
+  separately look up an NWPS-specific lid. Captured a trimmed summary of
+  the gauges-related paths from the real spec as
+  `data/fixtures/nwps-swagger-summary.yaml`.

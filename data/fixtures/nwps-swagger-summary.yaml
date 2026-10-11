@@ -1,0 +1,16 @@
+info:
+  title: National Water Prediction Service API
+  description: API for the National Water Prediction Service's hydrologic products.
+  version: 1.0.0
+  contact:
+    name: National Water Center
+    url: https://water.noaa.gov/
+    email: nws.nwc.ops@noaa.gov
+gaugePaths:
+- /nwps/v1/gauges
+- /nwps/v1/gauges/raag
+- /nwps/v1/gauges/{identifier}
+- /nwps/v1/gauges/{identifier}/ratings
+- /nwps/v1/gauges/{identifier}/riverflow
+- /nwps/v1/gauges/{identifier}/stageflow
+- /nwps/v1/gauges/{identifier}/stageflow/{product}

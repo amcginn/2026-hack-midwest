@@ -51,11 +51,19 @@ function extractThresholds(body: NwpsGaugeResponse): GaugeFloodThresholds {
 }
 
 /**
- * Fetch and score the latest river gauge reading for an NWPS location
- * ID ("lid", e.g. "CMMI4" for Mississippi River at Camanche/Clinton, IA).
+ * Fetch and score the latest river gauge reading.
+ *
+ * Confirmed via NWPS's own swagger spec
+ * (api.water.noaa.gov/nwps/v1/docs/swagger.json) that the `identifier`
+ * path param accepts EITHER the NWPS location ID ("lid", e.g. "CMMI4")
+ * OR the raw USGS site number (e.g. "05420500") -- verified live, both
+ * resolve to the same gauge. This means callers/facility records don't
+ * need to look up or store an NWPS-specific code; the USGS site ID
+ * (the one actually named in the challenge text as a public data
+ * source) works directly.
  */
-export async function evaluateUsgsGaugeHeight(lid: string): Promise<SourceOutcome> {
-  const res = await fetch(`${NWPS_BASE}/${lid.toLowerCase()}`, {
+export async function evaluateUsgsGaugeHeight(identifier: string): Promise<SourceOutcome> {
+  const res = await fetch(`${NWPS_BASE}/${identifier.toLowerCase()}`, {
     headers: { "User-Agent": USER_AGENT },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
@@ -68,11 +76,11 @@ export async function evaluateUsgsGaugeHeight(lid: string): Promise<SourceOutcom
       return {
         source: "USGS/NWPS",
         tier: "supplemental",
-        signal: `Gauge ${lid}`,
+        signal: `Gauge ${identifier}`,
         status: "absent",
         weight: 0.5,
-        detail: { lid },
-        note: "No current gauge data available for this location ID.",
+        detail: { identifier },
+        note: "No current gauge data available for this identifier.",
         timestamp: new Date().toISOString(),
       };
     }
@@ -93,10 +101,10 @@ export async function evaluateUsgsGaugeHeight(lid: string): Promise<SourceOutcom
     return {
       source: "USGS/NWPS",
       tier: "supplemental",
-      signal: data?.name ?? `Gauge ${lid}`,
+      signal: data?.name ?? `Gauge ${identifier}`,
       status: "absent",
       weight: 0.5,
-      detail: { lid },
+      detail: { identifier },
       note: "No current observed reading available for this gauge.",
       timestamp: new Date().toISOString(),
     };
@@ -114,12 +122,12 @@ export async function evaluateUsgsGaugeHeight(lid: string): Promise<SourceOutcom
   return {
     source: "USGS/NWPS",
     tier: "supplemental",
-    signal: data.name ?? `Gauge ${lid}`,
+    signal: data.name ?? `Gauge ${identifier}`,
     status: result.status,
     postureScore: result.postureScore,
     weight: 0.5,
     detail: {
-      lid,
+      lid: data.lid ?? identifier,
       usgsId: data.usgsId ?? null,
       gaugeHeightFt: observed.primary,
       unit: observed.primaryUnit,
