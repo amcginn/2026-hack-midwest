@@ -1239,17 +1239,27 @@ go stale like the deliverable fields did before this review caught it.
 - [ ] **GAP**: Channel routing (see above, same gap)
 
 ### Deliverable 4: The decision record
-- [ ] **GAP — highest priority.** The challenge explicitly calls this
-      "the deliverable most teams will skip." We currently have NOTHING
-      persisted — every `/evaluate` call is stateless, nothing is
-      written anywhere. No decision record exists at all yet.
-      **Timestamp nuance flagged by user (2026-10-11)**: must distinguish
-      "when the source itself last updated" (e.g. NWS `effective`/`sent`,
-      NWPS `validTime`, AQICN `time.iso` -- all confirmed available,
-      see Decision Log) from "when WE evaluated/recorded it." Both need
-      to be captured for genuine reconstructability -- recording only
-      our own eval time would lose "what was known, when" if the
-      upstream source's own data was itself stale at eval time.
+- [x] **Resolved 2026-10-11.** Implemented in
+      `server/src/repository/decisionRecord.ts`, persisted as append-
+      only JSONL (`data/decision-records/records.jsonl`, gitignored —
+      runtime data, not source). Every `/evaluate` call builds and
+      appends a `DecisionRecord`: `recordId`, our own `evaluatedAt`,
+      full per-source inputs (each with its OWN `sourceReportedAt` —
+      the dual-timestamp distinction the user flagged, so "when we
+      looked" and "when the source itself last updated" are both
+      captured, not conflated), excluded/narrative inputs, notification
+      recipients, source errors, posture, and rationale. Retrieval
+      routes: `GET /api/decision-records` (all, newest first, optional
+      `?facilityId=`) and `GET /api/decision-records/:recordId`.
+      Verified live: appending (not overwriting) across multiple
+      evaluations, facility filtering, single-record lookup, and
+      resilience to a deliberately-corrupted line in the file (skipped
+      with a logged warning, not a crash). UI: new
+      `DecisionLogComponent`, expandable per-record cards showing
+      inputs/recipients/errors at the time of that specific decision,
+      embedded in the facility dashboard, auto-refreshes after each new
+      evaluation so the just-created record appears without a manual
+      reload.
 
 ### Deliverable 5: Threshold defensibility
 - [x] Strong — CAP spec citations (official OASIS/NWS enumeration
@@ -1258,10 +1268,10 @@ go stale like the deliverable fields did before this review caught it.
       all documented in section 3/4 with sources.
 
 ### Net priority order for remaining time (per 2026-10-11 review)
-1. Decision record persistence (highest-named priority, cheapest to add)
+1. ~~Decision record persistence~~ — **done 2026-10-11**, see above
 2. Restore `thresholdCrossed` / `confidence` / `whatWouldChange` (was
    designed, just needs re-implementing against the current response
-   shape)
+   shape) — **next up**
 3. Notification message + channel routing
 4. Display `accessibilityNotes` (trivial)
 
