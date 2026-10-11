@@ -1,0 +1,23 @@
+{
+  "name": "usda-facility-decisions-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend for the USDA Weather-Driven Facility Decisions hackathon project (Hack Midwest 2026).",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "dotenv": "16.4.5",
+    "express": "4.21.1",
+    "yaml": "2.6.1"
+  },
+  "devDependencies": {
+    "@types/express": "4.17.21",
+    "@types/node": "22.9.0",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  }
+}
