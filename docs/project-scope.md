@@ -391,16 +391,18 @@ no runtime translation needed. `resolvedZone` is still always re-resolved
 live via `/points` rather than trusted as stored truth, since it's cheap
 and avoids drift if coordinates are ever edited.
 
-**Known gap (noted, not fixed, 2026-10-11)**: section 4 describes a
-"custom per-facility narrative source" extensibility pattern (KDKD being
-the worked example), but this facility schema does not yet have a field
-for it (e.g. `customSources: []`). Deliberately not adding one here,
-since we explicitly decided not to build a generic plugin system for the
-hackathon — adding the field without the mechanism behind it would
-overstate what's built. If build time allows, the simplest honest
+**Delighter, not core scope (confirmed 2026-10-11)**: section 4 describes
+a "custom per-facility narrative source" extensibility pattern (KDKD
+being the worked example), but this facility schema does not yet have a
+field for it (e.g. `customSources: []`), and that's intentional. KDKD/
+custom-source wiring is explicitly a **stretch delighter to add only
+after the core pipeline (NWS + USGS/AQICN/Iowa-DOT scoring, tiered
+output, templated rationale) is working end-to-end** — not something to
+build in parallel with the core path. If time allows: simplest honest
 version is a hardcoded association (Iowa facility -> KDKD fetch
-function) rather than a configurable field, with the *field* reserved as
-a documented future-roadmap item.
+function) rather than a configurable field; the generic `customSources`
+field itself stays a documented future-roadmap item, not something to
+half-build under time pressure.
 
 **Employee + daily schedule data model — redesigned (2026-10-11, see
 Decision Log)**. The original `assignedFacilityId`/`currentFacilityId`/
@@ -1291,3 +1293,6 @@ pressure later.
   a known gap where section 4's custom-source extensibility pattern
   (KDKD) isn't yet reflected as a field on the facility schema in section
   1 — deliberately left unfixed rather than add an unbuilt-looking field.
+- **2026-10-11**: Confirmed KDKD/custom-source wiring is a stretch
+  delighter, explicitly sequenced *after* the core pipeline works, not a
+  parallel task. Updated section 1's note accordingly.
