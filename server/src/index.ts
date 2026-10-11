@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express, { type Request, type Response } from "express";
 import { evaluateNwsAlerts } from "./sources/nws";
+import { evaluateUsgsGaugeHeight } from "./sources/usgs";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
@@ -32,6 +33,35 @@ app.get("/api/sources/nws", async (req: Request, res: Response) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     res.status(502).json({ error: "NWS lookup failed", detail: message });
+  }
+});
+
+/**
+ * Second integration slice: live USGS gauge height.
+ *
+ * Example: GET /api/sources/usgs?siteId=05420500&floodStageFt=11.0
+ * (Mississippi River at Clinton, IA; flood stage per the live NWS
+ * Flood Warning text captured during scoping)
+ */
+app.get("/api/sources/usgs", async (req: Request, res: Response) => {
+  const siteId = typeof req.query.siteId === "string" ? req.query.siteId : undefined;
+  const floodStageRaw = req.query.floodStageFt;
+  const floodStageFt =
+    floodStageRaw !== undefined && !Number.isNaN(Number(floodStageRaw))
+      ? Number(floodStageRaw)
+      : undefined;
+
+  if (!siteId) {
+    res.status(400).json({ error: "siteId query param is required" });
+    return;
+  }
+
+  try {
+    const outcome = await evaluateUsgsGaugeHeight(siteId, floodStageFt);
+    res.json({ siteId, floodStageFt: floodStageFt ?? null, outcome });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(502).json({ error: "USGS lookup failed", detail: message });
   }
 });
 
