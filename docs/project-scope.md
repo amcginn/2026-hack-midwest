@@ -228,6 +228,24 @@ facility (same state as our primary demo), alongside USGS gauge height and
 AQICN. GA 511 remains narrative-only (no scorable field). MN CARS511
 events exist but aren't presently relevant to our chosen facilities.
 
+**Found via user — KDKD (Clinton, IA area) school/business closings**
+(2026-10-11): `mykdkd.com` runs a WordPress "Entity Closing Lite" plugin;
+closings are fetched via `POST .../entity-closing-lite/post/
+list-front.php` with a `chkClo` validation token. Confirmed the token is
+**embedded in the public closings page HTML** (`cl_wpb_key`), not
+session-bound — a bogus token returns `"error"`, the real one (scraped
+fresh from the page) works with no cookie required, confirmed across
+multiple test runs (one transient `error` on an identical request,
+likely a momentary blip, not reproduced on retry). Live result today:
+`{"count":"0","list":[]}` — no active closings, consistent with no severe
+weather affecting Clinton, IA schools right now. This is **exactly the
+kind of hyper-local, informal source a real facility manager would check**
+per the challenge text ("maybe a local school district's announcement") —
+and it's structurally unlike anything else found (static scraped token +
+POST form, not a REST GET), making it a strong worked example for the
+"extendable to custom per-facility sources" idea (see section 4).
+Narrative-only, same tier as GA 511.
+
 ### Resolved Design
 
 **Data sources in scope:**
@@ -611,22 +629,71 @@ track to evaluate). The two Iowa/Montana demo facilities only ever have an
 NWS signal (no NHC storm applies there) — NHC weighting only engages for
 the stretch Alabama/Isaias scenario.
 
-### Resolved Design
+### Resolved Design (standardization model, finalized 2026-10-11)
 
-- When only NWS applies (Iowa, Montana scenarios): NWS score used directly,
-  no weighting math needed (weight is effectively 1.0 for the only present
-  signal).
-- When both NWS and NHC apply (Alabama/Isaias stretch scenario): NWS
-  weighted 0.7, NHC weighted 0.3 — NWS alerts are the authoritative,
-  locally-specific signal (a Flood Warning IS the actionable thing);
-  NHC track data is useful corroborating/early-warning context but is
-  national-scale and less locally precise.
+**Common scale**: every scored source converts its native unit into a
+0–4 "posture pressure" score, matching the posture ladder directly:
+
+```
+0 = Normal | 1 = Delay | 2 = Early Dismissal | 3 = Telework/Unscheduled Leave | 4 = Closure
+```
+
+Sources do NOT get rescaled relative to each other — each has its own
+documented native-unit-to-0-4 conversion (NWS via the categorical lookup
+table in section 3; others below). **Weighting**, not scale distortion,
+is how "NWS matters more" gets expressed — per user: official government
+sources (NWS) should scale highest, supplemental resources (USGS, AQICN,
+state DOT) matter but less, and purely narrative sources (GA 511, KDKD
+school closings) don't get a numeric weight at all.
+
+| Source | Native unit | Conversion into 0-4 | Weight | Tier |
+|---|---|---|---|---|
+| NWS Alerts | severity × certainty × urgency | categorical lookup table (section 3) | 1.0 | Primary (explicitly named in challenge text) |
+| USGS gauge height | feet | ratio to published flood stage (e.g. 11.0 ft at the Clinton gauge, taken directly from the live flood warning's own text) | 0.5 | Supplemental |
+| AQICN | AQI index (0-500) | EPA's own published AQI category breakpoints (Good/Moderate/USG/Unhealthy/Very Unhealthy/Hazardous) mapped onto 0-4 | 0.4 | Supplemental |
+| Iowa DOT road conditions | `ROAD_CONDITION_CODE` (small int) | pending — scale undocumented, see Open Questions | 0.4 (once resolved) | Supplemental |
+| NHC storm track | intensity (kt) | Saffir-Simpson-adjacent bucketing | 0.3 | Supplemental (stretch-only facility) |
+| GA 511 alerts | free text | **not scored** | 0 | Narrative-only |
+| KDKD school closings (Clinton, IA) | free text / closing-type list | **not scored** | 0 | Narrative-only, custom per-facility source (see below) |
+
+**Aggregation formula** — weighted average over only the sources that are
+actually present and scored for a given facility/evaluation run (per
+section 2's "absence is not evidence of normalcy" principle — missing or
+narrative-only sources are *omitted* from the formula entirely, never
+included as a 0):
+
+```
+finalScore = sum(sourceScore * sourceWeight for each PRESENT scored source)
+             / sum(sourceWeight for each PRESENT scored source)
+```
+
+Concretely: for Iowa/Montana (NWS-only, the common case), `finalScore`
+reduces to the NWS score directly — weight ratio is 1.0/1.0. When USGS/
+AQICN/Iowa-DOT also have live scored data for a facility, they nudge the
+aggregate up or down proportional to their lower weights, but can't
+override a strong NWS signal unless several supplemental sources agree
+strongly in the same direction. This directly implements "the official
+government source scales highest, then supplemental resources matter but
+less."
+
 - Posture ladder bucket boundaries (tentative, unchanged from original):
   - 0.0–0.5 normal
   - 0.5–1.5 delay
   - 1.5–2.5 early dismissal
   - 2.5–3.5 telework / unscheduled leave
   - 3.5+ closure
+
+**Custom per-facility sources (extensibility pattern, 2026-10-11)**: the
+KDKD (Clinton, IA school closings) finding is a worked example of a
+source that's facility/locality-specific rather than a general nationwide
+API. Documented pattern (not a generic plugin system — too much to build
+in the time remaining, but the shape is worth capturing): a facility
+record could optionally carry a list of extra source configs, each
+tagged `scored` or `narrative`, with its own fetch strategy. KDKD slots in
+as `narrative`, same tier as GA 511. This demonstrates the architecture
+*could* extend to arbitrary per-facility sources (a real deployment would
+let a facility manager register "my district uses this closings site")
+without us needing to build that generality for the hackathon.
 
 ### Open Questions
 - [ ] Confirm posture ladder bucket boundaries against sample scenarios
@@ -884,3 +951,26 @@ pressure later.
   renamed to `main`). Confirmed `.env` correctly ignored before first
   commit (`git status --ignored`). First commit covers `docs/`, `data/`,
   `.gitignore` — no secrets included.
+- **2026-10-11**: User found and supplied a request pattern for KDKD
+  (mykdkd.com) school/business closings for the Clinton, IA area —
+  surfaced because Clinton's own school district links to it as their
+  closure-notification source. Tested live: confirmed working, no auth
+  session required despite initial appearance (`chkClo` token is embedded
+  in the public closings page HTML, not tied to the `PHPSESSID` cookie;
+  verified a bogus token fails but the scraped real one succeeds with no
+  cookie at all). One transient `error` response on a repeat identical
+  request did not reproduce on retry — treated as a blip, not a real
+  session requirement. Captured as `data/fixtures/
+  kdkd-clinton-ia-closings.yaml`. This becomes the worked example for a
+  documented (not built) "custom per-facility narrative source" extension
+  pattern — see section 4.
+- **2026-10-11**: Finalized the cross-source standardization model per
+  user's framing (NWS highest weight as the explicitly-named official
+  source, supplemental sources lower, narrative sources unscored). Common
+  0-4 "posture pressure" scale; each source has its own native-unit
+  conversion into that scale (not rescaled relative to each other);
+  weighting (not scale distortion) expresses source priority. Aggregation
+  is a weighted average over only present/scored sources — ties directly
+  back to the earlier "absence is not evidence of normalcy" principle.
+  Weights set: NWS 1.0, USGS 0.5, AQICN 0.4, Iowa DOT 0.4 (pending scale
+  docs), NHC 0.3, GA 511/KDKD 0 (narrative-only). Documented in section 4.

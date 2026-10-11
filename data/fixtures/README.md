@@ -25,6 +25,7 @@ clear which files are "real API evidence" vs "data we authored."
 | `aqicn-clinton-ia.yaml` | AQICN | Live AQI + sub-indices for Clinton, IA (AQI 64) |
 | `ia-dot-road-conditions.yaml` | Iowa DOT CARS511 (ArcGIS) | Schema + live sample, all segments at code `10`/"Seasonal" (normal) |
 | `ga-511-alerts.yaml` | GA 511 | Live unstructured alert text, incl. Hurricane Isaias road-impact notice |
+| `kdkd-clinton-ia-closings.yaml` | KDKD (mykdkd.com) | Live school/business closings list for Clinton, IA area. `{"count":"0","list":[]}` at capture time (no active closures). Narrative-only, custom per-facility source — see docs/project-scope.md section 1/4. Requires a `chkClo` token scraped from the public closings page, not session-bound. |
 
 All captured 2026-10-10. Live public data changes constantly — these are
 snapshots for reference/testing, not assumed to stay accurate; re-fetch
