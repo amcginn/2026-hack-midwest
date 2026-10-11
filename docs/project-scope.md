@@ -696,11 +696,40 @@ Insufficient-data variant (e.g. Air Quality Alert with Unknown fields):
       often already implicit in severity/certainty).
 - [ ] NHC intensity (kt) -> 0-4 conversion still not finalized (stretch
       scenario only, lower priority given time remaining)
-- [ ] USGS gauge height ratio-to-flood-stage conversion still not
-      finalized as an exact formula (flood stage value is known — 11.0 ft
-      at the Clinton gauge, from the live warning text — but the
-      ratio-to-score curve itself needs the same treatment this section
-      just got for NWS)
+- [x] **Resolved 2026-10-11 (implementation)**: USGS gauge height
+      ratio-to-flood-stage conversion implemented in
+      `server/src/evaluator/usgsScoring.ts` (ratio buckets: <60% normal,
+      60-90% delay, 90-100% early dismissal, 100-110% telework, 110%+
+      closure). Validated against real Clinton, IA data (9.86 ft / 11.0
+      ft reference -> 90% -> delay/early-dismissal boundary) and the
+      flood warning's own cited crest value (12.5 ft -> 114% -> closure).
+- [ ] **FLAGGED TO REVISIT**: USGS has no native flood-stage field of its
+      own (confirmed via live API response -- no threshold in the
+      `/nwis/iv` response). The adapter currently requires the caller to
+      pass `floodStageFt` explicitly (verified: returns
+      `insufficient_data` honestly if omitted, rather than guessing). The
+      11.0 ft value used in testing was pulled from the *NWS Flood
+      Warning's own free-text description*, not from USGS. This is NOT
+      YET WIRED into the facility repository/evaluation flow -- when we
+      build that (facility -> which gauge -> what flood stage), we need
+      to decide: (a) hardcode a per-facility flood-stage reference in the
+      synthetic facility data, (b) look it up from a public NWS flood-
+      stage reference endpoint if one exists (not yet checked), or (c)
+      parse it out of the related Flood Warning's free text (fragile).
+      Revisit before wiring the Iowa facility's full evaluation.
+      **Partial check done (2026-10-11)**: NWS/NOAA does appear to have
+      a river-forecast API at `api.water.noaa.gov/nwps/v1/gauges/{id}`
+      (NWPS -- National Water Prediction Service) that returns a
+      structured "could not find gauge ID" error for a wrong ID, strongly
+      suggesting it's real and would include flood-stage data for a
+      correct NWS gauge ID (different ID scheme than USGS's numeric site
+      IDs, not yet mapped). Attempting to list/search gauges by name
+      timed out (504) with no obvious filter param -- did not pursue
+      further to avoid burning build time on an unconfirmed path. Likely
+      the right answer for option (b) above if time allows revisiting;
+      otherwise default to option (a), hardcoding a reference value in
+      the synthetic facility data (least effort, still honest since the
+      data is synthetic anyway).
 
 ---
 
@@ -1421,3 +1450,14 @@ pressure later.
   oversight-role pattern and live per-location data pull," not "model
   all USDA facilities" — 5-6 seeded facilities across a few states, not
   comprehensive coverage. No authn/z, explicitly out of scope for the POC.
+- **2026-10-11**: Flagged (per user request) that USGS gauge height has
+  no native flood-stage field -- the adapter requires a caller-supplied
+  reference, currently untested beyond manual query params. Checked
+  briefly whether NWS's NWPS river-forecast API
+  (`api.water.noaa.gov/nwps/v1/gauges/{id}`) could supply this
+  authoritatively; endpoint appears real (structured error on a bad ID)
+  but the gauge-search path timed out and wasn't pursued further to
+  avoid losing build time on an unconfirmed path. Decision deferred to
+  when the facility repository is built: default to hardcoding a
+  flood-stage reference in the synthetic Iowa facility record unless
+  there's time to properly wire the NWPS lookup.
