@@ -12,7 +12,9 @@ import { evaluateNwsAlerts } from "./sources/nws";
 import { evaluateUsgsGaugeHeight } from "./sources/usgs";
 import { evaluateAqicn } from "./sources/aqicn";
 import { getAllFacilities, getFacilityById } from "./repository/facilities";
-import { getNotificationRecipients } from "./repository/applicability";
+import { getEmployeesByHomeFacility } from "./repository/employees";
+import { getScheduleEntries } from "./repository/schedule";
+import { getApplicableEmployees, getNotificationRecipients } from "./repository/applicability";
 import { aggregateSources } from "./evaluator/aggregate";
 import { scoreToPosture, POSTURE_LABELS } from "./evaluator/posture";
 import { buildRationale } from "./rationale/templates";
@@ -109,6 +111,52 @@ app.get("/api/sources/aqicn", async (req: Request, res: Response) => {
 
 app.get("/api/facilities", (_req: Request, res: Response) => {
   res.json({ facilities: getAllFacilities() });
+});
+
+/**
+ * Full employee roster for a facility, with today's schedule-exception
+ * status and applicability flags -- separate from /evaluate's
+ * notification recipient list so it's visible WHY someone is or isn't
+ * being notified (e.g. "0 recipients" because zero employees are
+ * seeded for this facility, vs. because everyone's excluded today --
+ * these look identical from /evaluate alone).
+ *
+ * Example: GET /api/facilities/USDA-FSA-IA-CLINTON/roster?date=2026-10-11
+ */
+app.get("/api/facilities/:facilityId/roster", (req: Request, res: Response) => {
+  const { facilityId } = req.params;
+  const date = typeof req.query.date === "string" ? req.query.date : new Date().toISOString().slice(0, 10);
+
+  const facility = getFacilityById(facilityId);
+  if (!facility) {
+    res.status(404).json({ error: `Unknown facilityId: ${facilityId}` });
+    return;
+  }
+
+  const roster = getEmployeesByHomeFacility(facilityId);
+  const scheduleEntries = getScheduleEntries(facilityId, date);
+  const scheduleByEmployeeId = new Map(scheduleEntries.map((e) => [e.employeeId, e]));
+  const applicableIds = new Set(getApplicableEmployees(facilityId, date).map((a) => a.employee.employeeId));
+
+  res.json({
+    facilityId,
+    date,
+    rosterCount: roster.length,
+    roster: roster.map((employee) => {
+      const scheduleEntry = scheduleByEmployeeId.get(employee.employeeId);
+      return {
+        employeeId: employee.employeeId,
+        name: employee.name,
+        role: employee.role,
+        remoteStatus: employee.remoteStatus,
+        essentialPersonnel: employee.essentialPersonnel,
+        teleworkEligible: employee.teleworkEligible,
+        todayStatus: scheduleEntry?.status ?? employee.remoteStatus,
+        scheduleNote: scheduleEntry?.locationNote,
+        applicableToday: applicableIds.has(employee.employeeId),
+      };
+    }),
+  });
 });
 
 /**

@@ -1,7 +1,7 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
-import { FacilityEvaluation, Posture, SourceOutcome } from '../../models/facility.model';
+import { FacilityEvaluation, FacilityRoster, Posture, SourceOutcome } from '../../models/facility.model';
 
 const POSTURE_CLASS: Record<Posture, string> = {
   normal: 'posture-normal',
@@ -49,6 +49,7 @@ export class FacilityDashboardComponent implements OnChanges {
   @Input() facilityId: string | null = null;
 
   evaluation: FacilityEvaluation | null = null;
+  roster: FacilityRoster | null = null;
   loading = false;
   error: string | null = null;
 
@@ -57,6 +58,7 @@ export class FacilityDashboardComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['facilityId'] && this.facilityId) {
       this.loadEvaluation();
+      this.loadRoster();
     }
   }
 
@@ -79,6 +81,20 @@ export class FacilityDashboardComponent implements OnChanges {
     });
   }
 
+  loadRoster(): void {
+    if (!this.facilityId) return;
+    this.roster = null;
+
+    this.api.getRoster(this.facilityId).subscribe({
+      next: (res) => {
+        this.roster = res;
+      },
+      error: (err) => {
+        console.error('Could not load roster', err);
+      },
+    });
+  }
+
   postureClass(posture: Posture): string {
     return POSTURE_CLASS[posture] ?? '';
   }
@@ -91,4 +107,18 @@ export class FacilityDashboardComponent implements OnChanges {
   sourceSeverityIcon(source: SourceOutcome): string {
     return SEVERITY_ICON[this.sourceSeverityClass(source)];
   }
+
+  todayStatusLabel(status: string): string {
+    return TODAY_STATUS_LABELS[status] ?? status;
+  }
 }
+
+const TODAY_STATUS_LABELS: Record<string, string> = {
+  in_office: 'In office (normal)',
+  full_remote: 'Full remote (normal)',
+  hybrid: 'Hybrid (normal)',
+  on_detail: 'On detail elsewhere',
+  telework: 'Telework today',
+  leave: 'On leave',
+  in_office_today: 'In office today (exception)',
+};

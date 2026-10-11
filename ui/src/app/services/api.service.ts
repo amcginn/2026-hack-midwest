@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Facility, FacilityEvaluation } from '../models/facility.model';
+import { Facility, FacilityEvaluation, FacilityRoster } from '../models/facility.model';
 
 @Injectable({
   providedIn: 'root',
@@ -21,6 +21,13 @@ export class ApiService {
     const params = date ? `?date=${encodeURIComponent(date)}` : '';
     return this.http.get<FacilityEvaluation>(
       `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/evaluate${params}`,
+    );
+  }
+
+  getRoster(facilityId: string, date?: string): Observable<FacilityRoster> {
+    const params = date ? `?date=${encodeURIComponent(date)}` : '';
+    return this.http.get<FacilityRoster>(
+      `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/roster${params}`,
     );
   }
 }

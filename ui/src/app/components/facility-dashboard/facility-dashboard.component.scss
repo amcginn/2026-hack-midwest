@@ -165,3 +165,30 @@ table {
     border-bottom: 1px solid #eee;
   }
 }
+
+.roster {
+  .hint {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0;
+  }
+
+  .schedule-note {
+    font-size: 0.8rem;
+    color: #777;
+    font-style: italic;
+  }
+
+  .row-excluded {
+    color: #999;
+
+    td {
+      background: #fafafa;
+    }
+  }
+
+  .row-applicable td:last-child {
+    font-weight: 600;
+    color: #2e7d32;
+  }
+}

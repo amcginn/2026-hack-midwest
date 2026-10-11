@@ -65,6 +65,25 @@ export interface SourceError {
   error: string;
 }
 
+export interface RosterEmployee {
+  employeeId: string;
+  name: string;
+  role: string;
+  remoteStatus: 'in_office' | 'full_remote' | 'hybrid';
+  essentialPersonnel: boolean;
+  teleworkEligible: boolean;
+  todayStatus: string;
+  scheduleNote?: string;
+  applicableToday: boolean;
+}
+
+export interface FacilityRoster {
+  facilityId: string;
+  date: string;
+  rosterCount: number;
+  roster: RosterEmployee[];
+}
+
 export interface FacilityEvaluation {
   facilityId: string;
   facilityName: string;
