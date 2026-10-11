@@ -391,6 +391,17 @@ no runtime translation needed. `resolvedZone` is still always re-resolved
 live via `/points` rather than trusted as stored truth, since it's cheap
 and avoids drift if coordinates are ever edited.
 
+**Known gap (noted, not fixed, 2026-10-11)**: section 4 describes a
+"custom per-facility narrative source" extensibility pattern (KDKD being
+the worked example), but this facility schema does not yet have a field
+for it (e.g. `customSources: []`). Deliberately not adding one here,
+since we explicitly decided not to build a generic plugin system for the
+hackathon — adding the field without the mechanism behind it would
+overstate what's built. If build time allows, the simplest honest
+version is a hardcoded association (Iowa facility -> KDKD fetch
+function) rather than a configurable field, with the *field* reserved as
+a documented future-roadmap item.
+
 **Employee + daily schedule data model — redesigned (2026-10-11, see
 Decision Log)**. The original `assignedFacilityId`/`currentFacilityId`/
 `currentStatus` fields-on-employee design was wrong in a specific way: it
@@ -553,15 +564,23 @@ needs a defined behavior for this case, not just a scoring table for the
   included at value 0.
 
 ### Open Questions
-- [ ] Exact severity/certainty/urgency → score mapping table (section 3)
-- [ ] Threshold defensibility citations: NWS alert taxonomy + OPM federal
-      operating status categories
+- [x] **Resolved in section 3 (2026-10-11)**: severity/certainty/urgency →
+      score mapping is now a formula (severityBase × certaintyModifier)
+      built from official CAP definitions, not a hand-authored table.
+- [x] **Resolved in section 3 (2026-10-11)**: threshold defensibility
+      citation is the official CAP v1.2 enumeration definitions
+      themselves (certainty's probability bands in particular), rather
+      than OPM operating-status categories — CAP gave more directly
+      citable numeric grounding than OPM's categories would have. OPM
+      categories remain a secondary citation option if needed for the
+      pitch narrative (closure posture names loosely echo OPM's own
+      operating-status vocabulary).
 
 ---
 
 ## 3. Individual Evaluation Outcomes
 
-**Status: DRAFT**
+**Status: REVIEWED**
 
 ### Original Definition
 
@@ -685,7 +704,7 @@ Insufficient-data variant (e.g. Air Quality Alert with Unknown fields):
 
 ## 4. Final Output Parameters & Weighted Sources
 
-**Status: DRAFT**
+**Status: REVIEWED**
 
 ### Original Definition
 
@@ -772,16 +791,27 @@ let a facility manager register "my district uses this closings site")
 without us needing to build that generality for the hackathon.
 
 ### Open Questions
-- [ ] Confirm posture ladder bucket boundaries against sample scenarios
-      once section 3 scoring table is finalized
+- [x] **Resolved 2026-10-11**: bucket boundaries checked against section
+      3's real scored fixtures. Flood Warning (3.0) and SC tornado (4.0)
+      land cleanly in Telework and Closure respectively. Winter Storm
+      Warning (2.55) sits just inside Early Dismissal/Telework boundary —
+      close to the 2.5 line but not ambiguous (2.55 > 2.5, lands in
+      Telework). Tropical Storm Watch (1.5) sits exactly on the Delay/
+      Early-Dismissal boundary — this is a genuine edge case worth noting
+      for the demo narrative ("a borderline case, correctly shown as
+      borderline") rather than a bug to fix. Boundaries kept as-is; no
+      evidence from real data that they need adjusting.
 - [ ] Define NHC → posture-pressure score mapping (intensity in kt →
-      score, since NHC has no severity/certainty/urgency taxonomy to reuse)
+      score, since NHC has no severity/certainty/urgency taxonomy to
+      reuse) — still open, stretch-scenario only, lower priority
 
 ---
 
 ## 5. Outcome / Recommendation Pattern
 
-**Status: DRAFT**
+**Status: REVIEWED** (notification recipients/message/channels wiring
+still open — see Open Questions — but the core output structure and
+rationale-generation approach are settled)
 
 ### Original Definition
 
@@ -896,7 +926,7 @@ Full output object, incorporating the tiered structure:
   "thresholdCrossed": "aggregate 3.0 vs telework cutoff 2.5",
   "confidence": "high (certainty=Observed)",
   "whatWouldChange": "If the NWS Flood Warning is downgraded to an Advisory or certainty drops, aggregate falls below the telework threshold.",
-  "rationale": "<generated one-paragraph text>",
+  "rationale": "<templated one-paragraph text, posture-band template with interpolated source/value/urgencyNote>",
   "notification": {
     "recipients": [],
     "message": "",
@@ -907,6 +937,10 @@ Full output object, incorporating the tiered structure:
 }
 ```
 
+Note: `rationale` field above says "templated" not "generated" — updated
+to match the templated-not-LLM decision made after this section was
+first drafted (see Decision Log, 2026-10-11).
+
 **Prioritization-for-presentation rule** (resolves the earlier-deferred
 question): sort by tier (government > supplemental > narrative), then by
 score descending within tier. Urgency is always rendered as a qualifier
@@ -916,9 +950,19 @@ still surfacing timing information where a human needs it most: right
 next to the thing it qualifies.
 
 ### Open Questions
-- [ ] Notification recipient logic details (who's excluded/included and
-      why) — ties to section 1's "who's applicable at a facility today"
-      rule, not yet connected to this output structure
+- [ ] Notification `recipients`/`message`/`channels` fields in the output
+      object above are still placeholders (empty array/strings). The
+      *logic* for who's included is already defined — section 1's
+      "who's applicable at a facility today" rule (home roster minus
+      on_detail/telework/leave, plus any in_office_today exceptions,
+      plus essential personnel always) — but it hasn't been wired into
+      this output schema yet. Needs: populate `recipients` from that
+      rule, decide `message` templating (likely same approach as
+      `rationale` — small template set keyed by posture band +
+      essential/non-essential), decide `channels` routing rule (e.g.
+      essential personnel get SMS+email, others get email only — this
+      specific split was proposed early in scoping but never finalized
+      as a rule here).
 - [x] **Resolved 2026-10-11**: message/rationale text generation is
       **templated, not LLM-generated**. The combination space is small
       and finite (severity tier x certainty tier x posture band x urgency
@@ -1235,3 +1279,15 @@ pressure later.
   fully deterministic output with no new dependency, latency, or cost,
   and still satisfy the plain-language-paragraph deliverable. Simplifies
   section 6 (architecture) by removing any need for an LLM inference path.
+- **2026-10-11**: Consistency pass across the whole doc before moving to
+  section 6 (architecture). Fixed: section 2 and 4 open-question
+  checkmarks that were resolved elsewhere but never checked off; section
+  statuses for 3/4/5 bumped from DRAFT to REVIEWED (all have resolved
+  designs with real validated numbers now); section 5's `rationale`
+  placeholder text updated from "generated" to "templated" to match the
+  templated-not-LLM decision; connected section 5's open notification
+  question explicitly back to section 1's already-defined applicability
+  rule (logic exists, just not wired into the output schema yet); flagged
+  a known gap where section 4's custom-source extensibility pattern
+  (KDKD) isn't yet reflected as a field on the facility schema in section
+  1 — deliberately left unfixed rather than add an unbuilt-looking field.
