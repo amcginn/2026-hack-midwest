@@ -26,6 +26,25 @@ facilities:
       re-checks. Also where USGS gauge, AQICN, and Iowa DOT road-condition
       supplementary signals are demoed (hyper-local, same county/state).
 
+  - facilityId: USDA-FSA-IA-DESMOINES
+    name: USDA FSA Iowa State Office
+    address:
+      line1: 210 Walnut St
+      city: Des Moines
+      state: IA
+      zip: "50309"
+    coordinates:
+      lat: 41.5868
+      lon: -93.6250
+    hours: "08:00-16:30"
+    buildingType: office
+    accessibilityNotes: ground-floor ADA accessible
+    notes: >
+      Second Iowa facility (added 2026-10-11) -- gives the state/office
+      picker more than one option per state, and demonstrates that the
+      same NWS zone-lookup pipeline correctly varies by location within
+      a state (different county/zone than Clinton).
+
   - facilityId: USDA-FS-MT-BILLINGS
     name: USDA Forest Service Billings Field Office
     address:
@@ -44,6 +63,25 @@ facilities:
       the evaluator generalizes across event types. Re-verify live
       closer to demo time; conditions shift (confirmed firsthand via the
       SC tornado and GA/NC tornado->flood shifts observed during scoping).
+
+  - facilityId: USDA-FS-MT-GREATFALLS
+    name: USDA Forest Service Great Falls Office
+    address:
+      line1: 88 Central Ave
+      city: Great Falls
+      state: MT
+      zip: "59401"
+    coordinates:
+      lat: 47.5053
+      lon: -111.3008
+    hours: "08:00-16:30"
+    buildingType: office
+    accessibilityNotes: ground-floor ADA accessible
+    notes: >
+      Second Montana facility (added 2026-10-11) -- NWS Great Falls was
+      one of the offices actively issuing Winter Storm Warnings during
+      initial data-source scoping (section 1), making this a
+      thematically fitting second location for the state.
 
   - facilityId: USDA-FS-AL-STATION
     name: USDA Forest Service Alabama Research Station

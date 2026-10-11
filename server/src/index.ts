@@ -268,6 +268,10 @@ app.get("/api/facilities/:facilityId/evaluate", async (req: Request, res: Respon
   } catch (err) {
     console.error("FAILED TO PERSIST DECISION RECORD -- audit trail is incomplete:", err);
   }
+  // Note: appendDecisionRecord may skip writing if this evaluation is
+  // a material duplicate of the facility's most recent record within
+  // the dedup window (see repository/decisionRecord.ts) -- this is
+  // expected and desired, not a failure.
 
   res.json({
     facilityId,

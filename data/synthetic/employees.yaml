@@ -79,3 +79,46 @@ employees:
       closure most days. See schedule-entries.yaml for 2026-10-11:
       in_office_today (quarterly review) — the case the old data model
       couldn't express. On this specific day, IS affected.
+
+  # Added 2026-10-11 along with the Des Moines and Great Falls
+  # facilities, so the state/office picker has more than one populated
+  # option per state.
+  - employeeId: E1007
+    name: Casey Whitfield
+    phone: "555-0106"
+    email: casey.whitfield@example.gov
+    role: State Executive Director
+    homeFacilityId: USDA-FSA-IA-DESMOINES
+    remoteStatus: in_office
+    essentialPersonnel: true
+    teleworkEligible: false
+
+  - employeeId: E1008
+    name: Riley Nakamura
+    phone: "555-0107"
+    email: riley.nakamura@example.gov
+    role: Loan Officer
+    homeFacilityId: USDA-FSA-IA-DESMOINES
+    remoteStatus: hybrid
+    essentialPersonnel: false
+    teleworkEligible: true
+
+  - employeeId: E1009
+    name: Dakota Finch
+    phone: "555-0108"
+    email: dakota.finch@example.gov
+    role: Forestry Technician
+    homeFacilityId: USDA-FS-MT-GREATFALLS
+    remoteStatus: in_office
+    essentialPersonnel: false
+    teleworkEligible: true
+
+  - employeeId: E1010
+    name: Harper Delgado
+    phone: "555-0109"
+    email: harper.delgado@example.gov
+    role: Facility Manager
+    homeFacilityId: USDA-FS-MT-GREATFALLS
+    remoteStatus: in_office
+    essentialPersonnel: true
+    teleworkEligible: false

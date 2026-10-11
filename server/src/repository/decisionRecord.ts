@@ -124,13 +124,50 @@ export function buildDecisionRecord(params: {
   };
 }
 
-/** Append a decision record to the JSONL store. Fire-and-forget-safe:
- * callers should not let a write failure block the HTTP response, but
- * SHOULD log it loudly, since a silently-failing audit trail defeats
- * the entire point of this deliverable. */
-export function appendDecisionRecord(record: DecisionRecord): void {
+// If a facility's evaluation hasn't materially changed (same posture,
+// same recommended score, same government-source-error state) within
+// this window, skip persisting a near-duplicate record. Found live,
+// 2026-10-11: every dashboard page view/refresh calls /evaluate, which
+// was flooding the audit trail with 8-9 near-identical records seconds
+// apart during a single viewing session -- defeats the point of a
+// trustworthy decision record (a reviewer shouldn't have to wade
+// through refresh noise to find actual decision points). A genuinely
+// new/changed condition is NEVER deduplicated, regardless of timing.
+const DEDUP_WINDOW_MS = 5 * 60 * 1000;
+
+function isMaterialDuplicate(candidate: DecisionRecord, previous: DecisionRecord | undefined): boolean {
+  if (!previous) return false;
+
+  const elapsedMs = new Date(candidate.evaluatedAt).getTime() - new Date(previous.evaluatedAt).getTime();
+  if (elapsedMs > DEDUP_WINDOW_MS) return false;
+
+  return (
+    candidate.posture === previous.posture &&
+    candidate.recommendedScore === previous.recommendedScore &&
+    candidate.governmentSourceErrored === previous.governmentSourceErrored
+  );
+}
+
+/** Append a decision record to the JSONL store, unless it's a material
+ * duplicate of the facility's most recent record within the dedup
+ * window (see constant above). Fire-and-forget-safe: callers should
+ * not let a write failure block the HTTP response, but SHOULD log it
+ * loudly, since a silently-failing audit trail defeats the entire
+ * point of this deliverable.
+ *
+ * Returns true if a record was actually written, false if skipped as
+ * a duplicate -- callers can use this to decide whether to tell the
+ * decision-log UI to refresh. */
+export function appendDecisionRecord(record: DecisionRecord): boolean {
   ensureDir();
+
+  const previous = getDecisionRecordsForFacility(record.facilityId)[0]; // newest-first
+  if (isMaterialDuplicate(record, previous)) {
+    return false;
+  }
+
   fs.appendFileSync(DECISION_RECORDS_FILE, JSON.stringify(record) + "\n", "utf-8");
+  return true;
 }
 
 /** Read all decision records, newest first. Loads the whole file into

@@ -26,6 +26,13 @@ export class DecisionLogComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['facilityId'] && this.facilityId) {
+      // Clear stale state immediately on facility switch -- otherwise
+      // the previous facility's records flash briefly before the new
+      // fetch resolves, and an expanded record ID from facility A can
+      // spuriously (non-)match facility B's record IDs (found live,
+      // 2026-10-11).
+      this.records = [];
+      this.expandedRecordId = null;
       this.load();
     }
   }
