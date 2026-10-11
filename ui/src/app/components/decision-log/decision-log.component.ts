@@ -1,7 +1,20 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
-import { DecisionRecord } from '../../models/facility.model';
+import { DecisionRecord, Posture } from '../../models/facility.model';
+
+// Mirrors server/src/evaluator/posture.ts POSTURE_LABELS -- needed here
+// because recommendedPosture is stored on the record as a raw enum
+// value, and the override-flag display needs the human label, not
+// "telework_unscheduled_leave" (found via screenshot review, 2026-10-11).
+const POSTURE_LABELS: Record<Posture, string> = {
+  normal: 'Normal Operations',
+  delay: 'Delayed Arrival',
+  early_dismissal: 'Early Dismissal',
+  telework_unscheduled_leave: 'Telework / Unscheduled Leave',
+  closure: 'Closure',
+  unknown: 'Status Unknown',
+};
 
 /**
  * Decision record history for a facility -- deliverable #4
@@ -54,5 +67,10 @@ export class DecisionLogComponent implements OnChanges {
 
   toggleExpanded(recordId: string): void {
     this.expandedRecordId = this.expandedRecordId === recordId ? null : recordId;
+  }
+
+  postureLabel(posture: Posture | null): string {
+    if (!posture) return 'none';
+    return POSTURE_LABELS[posture] ?? posture;
   }
 }

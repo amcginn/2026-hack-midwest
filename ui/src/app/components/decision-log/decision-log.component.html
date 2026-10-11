@@ -29,7 +29,7 @@
               }
               @if (record.wasOverridden) {
                 <span class="meta-item override-flag">
-                  ⚠ Overrode system recommendation ({{ record.recommendedPosture }})
+                  ⚠ Overrode system recommendation ({{ postureLabel(record.recommendedPosture) }})
                 </span>
               }
             </div>

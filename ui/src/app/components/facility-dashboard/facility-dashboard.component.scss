@@ -80,11 +80,17 @@
   gap: 1rem;
   align-items: flex-start;
 
+  // Fixed, content-independent widths for each field so the row layout
+  // doesn't shift depending on which option text happens to be
+  // selected (found via screenshot review, 2026-10-11 -- "Normal
+  // Operations" vs. "Telework / Unscheduled Leave" as the selected
+  // option were producing different wrap points across page loads).
   label {
     display: flex;
     flex-direction: column;
     font-size: 0.85rem;
     font-weight: 600;
+    flex: 0 0 auto;
   }
 
   select,
@@ -94,16 +100,26 @@
     padding: 0.4rem 0.5rem;
     font-size: 0.9rem;
     font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  input[type='date'] {
+    width: 160px;
+  }
+
+  input[type='text'] {
+    width: 220px;
   }
 
   select {
-    min-width: 260px;
+    width: 280px;
   }
 
   .notes-label {
     flex: 1 1 100%;
 
     textarea {
+      width: 100%;
       resize: vertical;
     }
   }
