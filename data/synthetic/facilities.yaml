@@ -102,6 +102,51 @@ facilities:
       Not required for the core build; USGS/AQICN/IA-DOT on the Clinton
       facility already satisfies the "supplementary signal" deliverable.
 
+  - facilityId: USDA-FSA-CA-SANDIEGO
+    name: USDA FSA San Diego County Office
+    address:
+      line1: 2345 Example Blvd
+      city: San Diego
+      state: CA
+      zip: "92101"
+    coordinates:
+      lat: 32.7157
+      lon: -117.1611
+    hours: "08:00-16:30"
+    buildingType: office
+    accessibilityNotes: ground-floor ADA accessible
+    notes: >
+      Added 2026-10-11 to verify the pipeline generalizes to a NEW
+      location/event type with zero code changes -- confirmed live
+      Flash Flood Warning (Severe/Likely/Immediate) covering San Diego
+      County at the time this facility was added. Different hazard
+      family (flash flooding, Immediate urgency) than the existing
+      Clinton (Flood Warning) and Great Falls (Winter Storm Warning)
+      scenarios -- proves the NWS CAP evaluator and zone-resolution
+      pipeline are genuinely general-purpose, not hardcoded to the
+      two hazard types already demoed.
+
+  - facilityId: USDA-FS-OR-PENDLETON
+    name: USDA Forest Service Pendleton Ranger Station
+    address:
+      line1: 710 Example Rd
+      city: Pendleton
+      state: OR
+      zip: "97801"
+    coordinates:
+      lat: 45.6721
+      lon: -118.7886
+    hours: "08:00-16:30"
+    buildingType: research_station
+    accessibilityNotes: ground-floor ADA accessible
+    notes: >
+      Added 2026-10-11 alongside San Diego, same purpose (verify
+      zero-code-change generalization to a new location). Confirmed
+      live Freeze Warning (Severe/Likely/Expected) covering the
+      foothills of the Blue Mountains of Oregon at the time this
+      facility was added -- a third distinct hazard type beyond flood
+      and winter storm.
+
 # Note: an earlier SC facility (Aiken County) was removed from this file.
 # It was built around a live Tornado Warning that has since cleared.
 # GA/NC flood activity observed in that region during scoping is handled

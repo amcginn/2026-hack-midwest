@@ -1,6 +1,7 @@
 import { Component, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import {
   FacilityEvaluation,
@@ -59,7 +60,7 @@ function scoreToSeverityClass(score: number | undefined): SourceSeverityClass {
 @Component({
   selector: 'app-facility-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecisionLogComponent],
+  imports: [CommonModule, FormsModule, RouterLink, DecisionLogComponent],
   templateUrl: './facility-dashboard.component.html',
   styleUrl: './facility-dashboard.component.scss',
 })
@@ -316,6 +317,26 @@ export class FacilityDashboardComponent implements OnChanges {
     return SEVERITY_ICON[this.sourceSeverityClass(source)];
   }
 
+  /** Highest-score-first, so the source actually driving the
+   * recommendation is always the first card, not buried among other
+   * concurrent alerts (found live, 2026-10-11 -- San Diego's zone had
+   * 9 simultaneous alerts rendering in whatever order NWS returned
+   * them, with no visual cue for which one mattered). */
+  sortedBySeverity(sources: SourceOutcome[]): SourceOutcome[] {
+    return [...sources].sort((a, b) => (b.postureScore ?? -1) - (a.postureScore ?? -1));
+  }
+
+  /** True if this source's score matches the recommendation's overall
+   * score -- i.e. it's (one of) the source(s) that actually drove the
+   * posture. Matching by score rather than a dedicated backend field
+   * since the exact drivingSource object isn't currently exposed on
+   * the API response; a tie between two equally-severe sources is
+   * rare and both legitimately deserve the badge if it happens. */
+  isDrivingSource(source: SourceOutcome): boolean {
+    if (!this.evaluation || this.evaluation.recommendedScore === null) return false;
+    return source.postureScore === this.evaluation.recommendedScore;
+  }
+
   /**
    * NWS sometimes issues the same warning as multiple zone-scoped CAP
    * records (confirmed live, 2026-10-11 -- see server/src/sources/nws.ts
@@ -352,6 +373,45 @@ export class FacilityDashboardComponent implements OnChanges {
   detailDate(source: SourceOutcome, key: string): string | null {
     const value = source.detail?.[key];
     return typeof value === 'string' ? value : null;
+  }
+
+  /** Format an ISO timestamp in ITS OWN embedded UTC offset, not the
+   * browser's local timezone -- found live, 2026-10-11: Angular's
+   * `date` pipe with no explicit timezone silently converts to
+   * whatever zone the viewer's browser is in, with no indication it
+   * did so. For a facility manager checking a DIFFERENT facility's
+   * alert times (e.g. an Iowa-based viewer checking Great Falls, MT),
+   * that's actively misleading -- what matters operationally is the
+   * facility's own local time, not the viewer's. NWS/NWPS/AQICN
+   * timestamps all already carry a real fixed UTC offset (e.g.
+   * "-07:00"), so no IANA timezone lookup/DST-abbreviation guessing is
+   * needed -- just render using the offset already in the string. */
+  formatWithOffset(isoString: string | null): string {
+    if (!isoString) return '';
+    const offsetMatch = isoString.match(/([+-]\d{2}:\d{2})$/);
+    const offset = offsetMatch ? offsetMatch[1] : null;
+
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
+
+    if (!offset) {
+      // No offset in the string (e.g. a Z/UTC timestamp, or our own
+      // clock) -- fall back to a plain UTC-labeled render rather than
+      // silently using browser-local with no label either.
+      return `${date.toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' })} UTC`;
+    }
+
+    const sign = offset[0];
+    const [offsetHours] = offset.slice(1).split(':').map(Number);
+    const offsetMinutes = Number(offset.slice(1).split(':')[1]);
+    const totalOffsetMinutes = (sign === '-' ? -1 : 1) * (offsetHours * 60 + offsetMinutes);
+
+    // Shift the UTC time by the embedded offset, then render those
+    // shifted fields as if they were UTC (so toLocaleString doesn't
+    // re-apply the BROWSER's own zone on top).
+    const shifted = new Date(date.getTime() + totalOffsetMinutes * 60000);
+    const formatted = shifted.toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' });
+    return `${formatted} (UTC${offset})`;
   }
 
   todayStatusLabel(status: string): string {

@@ -1,0 +1,87 @@
+<div class="facility-edit">
+  @if (loading) {
+    <p>Loading facility…</p>
+  } @else if (error) {
+    <p class="error">{{ error }}</p>
+  } @else if (facility) {
+    <h2>{{ facility.name }}</h2>
+    <p class="back-link"><a [routerLink]="['/facility', facilityId]">&larr; Back to dashboard</a></p>
+
+    <section class="facility-readonly">
+      <h3>Facility Details (read-only)</h3>
+      <p class="hint">
+        These fields are set when the facility is registered and aren't editable here.
+      </p>
+      <dl>
+        <div class="detail-row">
+          <dt>Address</dt>
+          <dd>{{ facility.address.line1 }}, {{ facility.address.city }}, {{ facility.address.state }} {{ facility.address.zip }}</dd>
+        </div>
+        <div class="detail-row">
+          <dt>Coordinates</dt>
+          <dd>{{ facility.coordinates.lat }}, {{ facility.coordinates.lon }}</dd>
+        </div>
+        <div class="detail-row">
+          <dt>Hours</dt>
+          <dd>{{ facility.hours }}</dd>
+        </div>
+        <div class="detail-row">
+          <dt>Building Type</dt>
+          <dd>{{ facility.buildingType }}</dd>
+        </div>
+        <div class="detail-row">
+          <dt>Accessibility</dt>
+          <dd>{{ facility.accessibilityNotes }}</dd>
+        </div>
+        @if (facility.riverGaugeId) {
+          <div class="detail-row">
+            <dt>River Gauge ID</dt>
+            <dd>{{ facility.riverGaugeId }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
+
+    <section class="facility-links">
+      <h3>Other Local Resources</h3>
+      <p class="hint">
+        Links a facility manager would check that aren't part of a built-in data source —
+        a local news station's closures page, a county emergency management feed, a school
+        district announcement page, or anything similar specific to this facility.
+      </p>
+
+      @if (links.length === 0) {
+        <p class="muted">No custom links added yet for this facility.</p>
+      } @else {
+        <ul class="link-list">
+          @for (link of links; track link.id) {
+            <li>
+              <span class="link-text">
+                <a [href]="link.url" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>
+                <span class="link-url">{{ link.url }}</span>
+              </span>
+              <button class="remove-link-button" (click)="removeLink(link)">Remove</button>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="add-link-form">
+        <label>
+          Label
+          <input type="text" [(ngModel)]="newLinkLabel" placeholder="e.g. County Emergency Management" />
+        </label>
+        <label>
+          URL
+          <input type="url" [(ngModel)]="newLinkUrl" placeholder="https://..." />
+        </label>
+        <button (click)="addLink()" [disabled]="addingLink">
+          {{ addingLink ? 'Adding…' : 'Add Link' }}
+        </button>
+      </div>
+      @if (addLinkError) {
+        <p class="error">{{ addLinkError }}</p>
+      }
+    </section>
+  }
+</div>

@@ -14,7 +14,7 @@
       <div class="record-card">
         <button class="record-summary" (click)="toggleExpanded(record.recordId)">
           <span class="record-time">
-            {{ record.evaluatedAt | date: 'medium' }}
+            {{ formatWithOffset(record.evaluatedAt) }}
             <span class="applies-to">— applies to {{ record.requestedDate }}</span>
           </span>
           <span class="record-posture">{{ record.postureLabel }}</span>
@@ -75,7 +75,7 @@
                     <td>{{ input.source }}</td>
                     <td>{{ input.signal }}</td>
                     <td>{{ input.postureScore ?? '—' }}</td>
-                    <td>{{ input.sourceReportedAt | date: 'medium' }}</td>
+                    <td>{{ formatWithOffset(input.sourceReportedAt) }}</td>
                   </tr>
                 }
                 @if (record.inputs.length === 0) {
@@ -137,7 +137,7 @@
       <tbody>
         @for (entry of notificationEntries; track entry.notificationId) {
           <tr>
-            <td>{{ entry.sentAt | date: 'medium' }}</td>
+            <td>{{ formatWithOffset(entry.sentAt) }}</td>
             <td>{{ entry.employeeName }}{{ entry.essentialPersonnel ? ' (essential)' : '' }}</td>
             <td>{{ entry.channel === 'sms' ? 'SMS' : 'Email' }}</td>
             <td>{{ entry.postureLabel }}</td>

@@ -15,13 +15,71 @@
       </section>
     }
 
-    <header class="posture-header" [ngClass]="postureClass(evaluation.posture)">
+    <section class="facility-profile">
       <h2>{{ evaluation.facilityName }}</h2>
-      <div class="posture-label">{{ evaluation.postureLabel }}</div>
-      <div class="score" *ngIf="evaluation.recommendedScore !== null">
-        Posture score: {{ evaluation.recommendedScore }} / 4
+      <div class="detail-grid">
+        <div>
+          <span class="detail-label">Address</span>
+          <span>{{ evaluation.facility.address.line1 }}, {{ evaluation.facility.address.city }}, {{ evaluation.facility.address.state }} {{ evaluation.facility.address.zip }}</span>
+        </div>
+        <div>
+          <span class="detail-label">Hours</span>
+          <span>{{ evaluation.facility.hours }}</span>
+        </div>
+        <div>
+          <span class="detail-label">Accessibility</span>
+          <span>{{ evaluation.facility.accessibilityNotes }}</span>
+        </div>
       </div>
-    </header>
+    </section>
+
+    <section class="posture-section" [ngClass]="postureClass(evaluation.posture)">
+      <div class="posture-summary">
+        <div class="posture-badge">
+          <div class="posture-label">{{ evaluation.postureLabel }}</div>
+          <div class="score" *ngIf="evaluation.recommendedScore !== null">
+            Posture score: {{ evaluation.recommendedScore }} / 4
+          </div>
+        </div>
+        <p class="rationale-text" [innerHTML]="renderRationale(evaluation.rationale)"></p>
+      </div>
+
+      <dl class="explanation">
+        <div class="explanation-row">
+          <dt>Why this level</dt>
+          <dd>{{ evaluation.thresholdCrossed }}</dd>
+        </div>
+        <div class="explanation-row">
+          <dt>How sure</dt>
+          <dd>{{ evaluation.confidence }}</dd>
+        </div>
+        <div class="explanation-row">
+          <dt>What to watch for</dt>
+          <dd>{{ evaluation.whatWouldChange }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="additional-resources">
+      <h3>Additional Resources</h3>
+      <p class="hint">
+        Links specific to this facility that the system can't evaluate or score — weigh these
+        alongside the recommendation above, not in place of it.
+      </p>
+      @if (evaluation.facility.customLinks.length > 0) {
+        <ul>
+          @for (link of evaluation.facility.customLinks; track link.id) {
+            <li>
+              <a [href]="link.url" target="_blank" rel="noopener noreferrer">{{ link.label }}</a>
+              <span class="link-url">({{ link.url }})</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="no-links">None added yet for this facility.</p>
+      }
+      <a class="edit-link" [routerLink]="['/facility', facilityId, 'edit']">Manage facility links &rarr;</a>
+    </section>
 
     <section class="roster">
       <h3>
@@ -42,7 +100,6 @@
               <th>Normal Pattern</th>
               <th>Today</th>
               <th>Essential</th>
-              <th>Would Be Notified</th>
             </tr>
           </thead>
           <tbody>
@@ -58,32 +115,11 @@
                   }
                 </td>
                 <td>{{ e.essentialPersonnel ? 'Yes' : 'No' }}</td>
-                <td>{{ e.applicableToday ? '✓ Yes' : '— No' }}</td>
               </tr>
             }
           </tbody>
         </table>
       }
-    </section>
-
-    <section class="rationale">
-      <h3>Rationale</h3>
-      <p [innerHTML]="renderRationale(evaluation.rationale)"></p>
-
-      <dl class="explanation">
-        <div class="explanation-row">
-          <dt>Why this level</dt>
-          <dd>{{ evaluation.thresholdCrossed }}</dd>
-        </div>
-        <div class="explanation-row">
-          <dt>How sure</dt>
-          <dd>{{ evaluation.confidence }}</dd>
-        </div>
-        <div class="explanation-row">
-          <dt>What to watch for</dt>
-          <dd>{{ evaluation.whatWouldChange }}</dd>
-        </div>
-      </dl>
     </section>
 
     <section class="sources government">
@@ -95,11 +131,15 @@
           <p class="muted">NWS was checked and reports nothing active for this facility right now.</p>
         }
       }
-      @for (source of evaluation.sources.government; track source.rawRef) {
+      <div class="source-card-list" [class.scrollable]="evaluation.sources.government.length > 3">
+      @for (source of sortedBySeverity(evaluation.sources.government); track source.rawRef) {
         <div class="source-card" [ngClass]="sourceSeverityClass(source)">
           <div class="source-title">
             <span class="severity-icon">{{ sourceSeverityIcon(source) }}</span>
             {{ source.source }} — {{ source.signal }}
+            @if (isDrivingSource(source)) {
+              <span class="driving-badge">Driving this recommendation</span>
+            }
           </div>
           <div class="cap-badges">
             <span class="cap-badge severity">Severity: {{ source.detail['severity'] }}</span>
@@ -110,10 +150,10 @@
           @if (source.detail['onset'] || source.detail['ends']) {
             <div class="source-window">
               @if (detailDate(source, 'onset')) {
-                <span>Starts: {{ detailDate(source, 'onset') | date: 'medium' }}</span>
+                <span>Starts: {{ formatWithOffset(detailDate(source, 'onset')) }}</span>
               }
               @if (detailDate(source, 'ends')) {
-                <span>Ends: {{ detailDate(source, 'ends') | date: 'medium' }}</span>
+                <span>Ends: {{ formatWithOffset(detailDate(source, 'ends')) }}</span>
               }
             </div>
           }
@@ -138,9 +178,10 @@
               }
             </details>
           }
-          <div class="source-timestamp">Last updated: {{ source.timestamp | date: 'medium' }}</div>
+          <div class="source-timestamp">Last updated: {{ formatWithOffset(source.timestamp) }}</div>
         </div>
       }
+      </div>
     </section>
 
     <section class="sources supplemental">
@@ -155,7 +196,7 @@
             {{ source.source }} — {{ source.signal }}
           </div>
           <div class="source-note">{{ source.note }}</div>
-          <div class="source-timestamp">Last updated: {{ source.timestamp | date: 'medium' }}</div>
+          <div class="source-timestamp">Last updated: {{ formatWithOffset(source.timestamp) }}</div>
         </div>
       }
     </section>

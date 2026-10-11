@@ -32,3 +32,7 @@ ui/.angular/
 # Generated decision/notification records (runtime audit trail, not source data)
 data/decision-records/
 data/notification-log/
+
+# User-editable per-facility links (runtime data, not source -- see
+# server/src/repository/facilityLinks.ts)
+data/facility-links/

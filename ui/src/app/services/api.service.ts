@@ -8,6 +8,7 @@ import {
   DecisionRecord,
   NotificationLogEntry,
   NotificationChannel,
+  FacilityLink,
 } from '../models/facility.model';
 
 @Injectable({
@@ -72,6 +73,29 @@ export class ApiService {
   getNotificationLog(facilityId: string): Observable<{ count: number; entries: NotificationLogEntry[] }> {
     return this.http.get<{ count: number; entries: NotificationLogEntry[] }>(
       `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/notifications`,
+    );
+  }
+
+  getFacility(facilityId: string): Observable<Facility> {
+    return this.http.get<Facility>(`${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}`);
+  }
+
+  getFacilityLinks(facilityId: string): Observable<{ links: FacilityLink[] }> {
+    return this.http.get<{ links: FacilityLink[] }>(
+      `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/links`,
+    );
+  }
+
+  addFacilityLink(facilityId: string, label: string, url: string): Observable<FacilityLink> {
+    return this.http.post<FacilityLink>(`${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/links`, {
+      label,
+      url,
+    });
+  }
+
+  removeFacilityLink(facilityId: string, linkId: string): Observable<void> {
+    return this.http.delete<void>(
+      `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/links/${encodeURIComponent(linkId)}`,
     );
   }
 }

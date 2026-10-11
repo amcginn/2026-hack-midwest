@@ -11,6 +11,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { evaluateNwsAlerts } from "./sources/nws";
 import { evaluateUsgsGaugeHeight, usgsAdapter } from "./sources/usgs";
 import { evaluateAqicn, aqicnAdapter } from "./sources/aqicn";
+import { evaluateIowaDotConditions, iowaDotAdapter } from "./sources/iowaDot";
 import type { SupplementalAdapter } from "./sources/supplementalAdapter";
 import { getAllFacilities, getFacilityById } from "./repository/facilities";
 import { getEmployeesByHomeFacility } from "./repository/employees";
@@ -35,6 +36,7 @@ import {
   getNotificationLogForFacility,
   type NotificationChannel,
 } from "./repository/notificationLog";
+import { getFacilityLinks, addFacilityLink, removeFacilityLink, isValidHttpUrl } from "./repository/facilityLinks";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
@@ -50,7 +52,7 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 // array + parallel sourceNames array for error labeling, which was
 // fragile (adding a source in the wrong array slot would silently
 // mislabel its errors).
-const supplementalAdapters: SupplementalAdapter[] = [usgsAdapter, aqicnAdapter];
+const supplementalAdapters: SupplementalAdapter[] = [usgsAdapter, aqicnAdapter, iowaDotAdapter];
 
 // Local-dev CORS: UI runs on :4200 (Angular default), server on :3001.
 // No authn/z in this POC (explicit decision, section 6) -- CORS here
@@ -138,8 +140,97 @@ app.get("/api/sources/aqicn", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Fourth integration slice: live Iowa DOT 511 winter road conditions.
+ * Iowa-only (see sources/iowaDot.ts) -- only meaningful for lat/lon
+ * within or near Iowa.
+ *
+ * Example: GET /api/sources/iowa-dot?lat=41.8847&lon=-90.1943 (Clinton, IA)
+ */
+app.get("/api/sources/iowa-dot", async (req: Request, res: Response) => {
+  const lat = Number(req.query.lat);
+  const lon = Number(req.query.lon);
+
+  if (Number.isNaN(lat) || Number.isNaN(lon)) {
+    res.status(400).json({ error: "lat and lon query params are required numbers" });
+    return;
+  }
+
+  try {
+    const outcome = await evaluateIowaDotConditions(lat, lon);
+    res.json({ lat, lon, outcome });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(502).json({ error: "Iowa DOT road-conditions lookup failed", detail: message });
+  }
+});
+
 app.get("/api/facilities", (_req: Request, res: Response) => {
   res.json({ facilities: getAllFacilities() });
+});
+
+app.get("/api/facilities/:facilityId", (req: Request, res: Response) => {
+  const facility = getFacilityById(req.params.facilityId);
+  if (!facility) {
+    res.status(404).json({ error: `Unknown facilityId: ${req.params.facilityId}` });
+    return;
+  }
+  res.json(facility);
+});
+
+/**
+ * Per-facility custom reference links -- see repository/facilityLinks.ts
+ * module doc. Genuinely writable at runtime (unlike the rest of the
+ * facility record, which is hand-authored seed data loaded once at
+ * server start -- see repository/facilities.ts).
+ */
+app.get("/api/facilities/:facilityId/links", (req: Request, res: Response) => {
+  const facility = getFacilityById(req.params.facilityId);
+  if (!facility) {
+    res.status(404).json({ error: `Unknown facilityId: ${req.params.facilityId}` });
+    return;
+  }
+  res.json({ links: getFacilityLinks(req.params.facilityId) });
+});
+
+app.post("/api/facilities/:facilityId/links", (req: Request, res: Response) => {
+  const { facilityId } = req.params;
+  const facility = getFacilityById(facilityId);
+  if (!facility) {
+    res.status(404).json({ error: `Unknown facilityId: ${facilityId}` });
+    return;
+  }
+
+  const label = typeof req.body?.label === "string" ? req.body.label.trim() : "";
+  const url = typeof req.body?.url === "string" ? req.body.url.trim() : "";
+
+  if (!label) {
+    res.status(400).json({ error: "label is required" });
+    return;
+  }
+  if (!url || !isValidHttpUrl(url)) {
+    res.status(400).json({ error: "url must be a valid http:// or https:// URL" });
+    return;
+  }
+
+  const link = addFacilityLink(facilityId, label, url);
+  res.status(201).json(link);
+});
+
+app.delete("/api/facilities/:facilityId/links/:linkId", (req: Request, res: Response) => {
+  const { facilityId, linkId } = req.params;
+  const facility = getFacilityById(facilityId);
+  if (!facility) {
+    res.status(404).json({ error: `Unknown facilityId: ${facilityId}` });
+    return;
+  }
+
+  const removed = removeFacilityLink(facilityId, linkId);
+  if (!removed) {
+    res.status(404).json({ error: `Unknown linkId: ${linkId}` });
+    return;
+  }
+  res.status(204).send();
 });
 
 /**
@@ -223,6 +314,23 @@ app.get("/api/facilities/:facilityId/evaluate", async (req: Request, res: Respon
   res.json({
     facilityId,
     facilityName: evalResult.facility.name,
+    // Facility detail fields named explicitly in the challenge's
+    // facility-model requirement ("location, hours, ... accessibility
+    // needs") -- previously only `facilityName` was returned here;
+    // address/hours/accessibilityNotes existed in the data model and
+    // synthetic YAML but were never surfaced via this response or the
+    // UI (section 7 gap tracker, closed 2026-10-11).
+    facility: {
+      address: evalResult.facility.address,
+      hours: evalResult.facility.hours,
+      buildingType: evalResult.facility.buildingType,
+      accessibilityNotes: evalResult.facility.accessibilityNotes,
+      // Curated, non-scored reference links for this facility -- see
+      // repository/facilityLinks.ts module doc. Not part of
+      // runEvaluation (not fetched/scored), read directly here since
+      // it's just a per-facility display concern.
+      customLinks: getFacilityLinks(facilityId),
+    },
     date,
     posture: evalResult.posture,
     postureLabel: POSTURE_LABELS[evalResult.posture],

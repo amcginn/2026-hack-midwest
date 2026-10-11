@@ -151,50 +151,203 @@
   }
 }
 
-.posture-header {
-  padding: 1rem 1.5rem;
+// Facility Profile -- identity only (name/address/hours/accessibility),
+// deliberately plain/uncolored. Restructured 2026-10-11 per user: the
+// office's identity (a stable fact) and the posture/recommendation (a
+// computed, dynamic outcome) read as two different kinds of
+// information and shouldn't share one colored block -- previously the
+// facility name lived inside the colored posture header, which blurred
+// "which office is this" together with "what's today's call."
+.facility-profile {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  color: #fff;
+  padding: 0.9rem 1.1rem;
   margin-bottom: 1rem;
 
   h2 {
-    margin: 0 0 0.25rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .detail-grid {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.9rem;
+      color: #333;
+    }
+  }
+
+  .detail-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #777;
+    margin-bottom: 0.1rem;
+  }
+}
+
+// Additional Resources -- curated, NOT scored/evaluated links (custom
+// per-facility links). Deliberately placed right after the
+// recommendation, before any government/supplemental evidence, per
+// user: this is something the human should weigh ALONGSIDE the
+// recommendation, not evidence the system itself used.
+.additional-resources {
+  margin-bottom: 1.5rem;
+
+  h3 {
+    margin-bottom: 0.25rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.25rem;
+  }
+
+  .hint {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0;
+  }
+
+  ul {
+    margin: 0.25rem 0 0.5rem;
+    padding-left: 1.1rem;
+    font-size: 0.9rem;
+  }
+
+  .no-links {
+    font-size: 0.88rem;
+    color: #888;
+    margin: 0.25rem 0 0.5rem;
+  }
+
+  .link-url {
+    font-size: 0.78rem;
+    color: #888;
+    margin-left: 0.3rem;
+  }
+
+  a {
+    color: #1565c0;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .edit-link {
+    display: inline-block;
+    font-size: 0.82rem;
+    color: #1565c0;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// Posture/Recommendation -- the computed outcome. Restructured
+// 2026-10-11 per user: a full-height saturated-color block was too
+// much bright color for text people need to actually read (the
+// rationale paragraph and explanation rows); color should mark the
+// STATUS, not fill the whole reading area. Now: a compact colored
+// badge (label + score) with the rationale text wrapping beside it,
+// both inside a plain-background card with a colored left-border
+// accent -- still visually one unit, tied to the posture color, but
+// not a wall of saturated color.
+.posture-section {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-left: 6px solid var(--posture-color, #999);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+
+  .posture-summary {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .posture-badge {
+    flex: 0 0 auto;
+    background: var(--posture-color, #999);
+    color: #fff;
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    min-width: 160px;
   }
 
   .posture-label {
-    font-size: 1.5rem;
+    font-size: 1.15rem;
     font-weight: 700;
+    line-height: 1.25;
   }
 
   .score {
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     opacity: 0.9;
+    margin-top: 0.15rem;
+  }
+
+  .rationale-text {
+    flex: 1 1 320px;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: #333;
+  }
+
+  .explanation {
+    margin: 0.9rem 0 0;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 0.6rem;
+
+    .explanation-row {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.25rem 0;
+      font-size: 0.88rem;
+      align-items: baseline;
+
+      dt {
+        flex: 0 0 150px;
+        font-weight: 700;
+        color: #444;
+      }
+
+      dd {
+        margin: 0;
+        flex: 1;
+        color: #333;
+      }
+    }
   }
 }
 
 .posture-normal {
-  background: #2e7d32;
+  --posture-color: #2e7d32;
 }
 .posture-delay {
-  background: #f9a825;
+  --posture-color: #f9a825;
 }
 .posture-early-dismissal {
-  background: #ef6c00;
+  --posture-color: #ef6c00;
 }
 .posture-telework {
-  background: #d84315;
+  --posture-color: #d84315;
 }
 .posture-closure {
-  background: #b71c1c;
+  --posture-color: #b71c1c;
 }
 .posture-unknown {
-  background: repeating-linear-gradient(
-    45deg,
-    #616161,
-    #616161 10px,
-    #424242 10px,
-    #424242 20px
-  );
+  --posture-color: #616161;
 }
 
 section {
@@ -233,6 +386,14 @@ section {
   }
 }
 
+.source-card-list {
+  &.scrollable {
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 0.4rem;
+  }
+}
+
 .source-card {
   border: 1px solid #ddd;
   border-left: 4px solid #ddd;
@@ -243,6 +404,21 @@ section {
 
   .source-title {
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .driving-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #fff;
+    background: #000;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
   }
 
   .cap-badges {

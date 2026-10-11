@@ -142,9 +142,22 @@ export interface DecisionRecord {
   decisionNotes?: string;
 }
 
+export interface FacilityLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export interface FacilityEvaluation {
   facilityId: string;
   facilityName: string;
+  facility: {
+    address: Address;
+    hours: string;
+    buildingType: string;
+    accessibilityNotes: string;
+    customLinks: FacilityLink[];
+  };
   date: string;
   posture: Posture;
   postureLabel: string;

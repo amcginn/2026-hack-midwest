@@ -348,16 +348,41 @@ this were a real production system."
   Demonstrates breadth of the data-source approach without overcommitting
   build time.
 
-**Current facility count (updated 2026-10-11)**: 5 facilities total,
-seeded with employees — Iowa Clinton (5 employees, lead demo), Iowa Des
-Moines (2 employees, added for picker variety), Montana Billings (1
-employee), Montana Great Falls (2 employees, added for picker variety
-and because it was one of the offices actively issuing Winter Storm
-Warnings during original scoping), Alabama Montgomery (0 employees,
-intentionally -- demonstrates the stretch-only NHC scenario slot and
-confirms the UI handles an empty roster correctly, not as a bug). See
-`data/synthetic/facilities.yaml` and `employees.yaml` for current
-authoritative state.
+**Current facility count (updated 2026-10-11, later session)**: 7
+facilities across 5 states, seeded with employees — Iowa Clinton (5
+employees, lead demo), Iowa Des Moines (2 employees, added for picker
+variety), Montana Billings (1 employee), Montana Great Falls (2
+employees, added for picker variety and because it was one of the
+offices actively issuing Winter Storm Warnings during original
+scoping), Alabama Montgomery (0 employees, intentionally -- demonstrates
+the stretch-only NHC scenario slot and confirms the UI handles an empty
+roster correctly, not as a bug), **San Diego CA (2 employees, added to
+verify zero-code-change generalization), Pendleton OR (2 employees,
+same purpose)**. See `data/synthetic/facilities.yaml` and
+`employees.yaml` for current authoritative state.
+
+**Verification: new locations/hazard types require zero code changes
+(2026-10-11, later session).** Checked nationwide active NWS alerts
+(506 active at check time) specifically for hazard types NOT already
+exercised by the existing Clinton (Flood Warning) and Great Falls
+(Winter Storm Warning) facilities. Added two brand-new facilities --
+San Diego, CA (live Flash Flood Warning, Severe/Likely/**Immediate** --
+the highest-urgency case not yet tested) and Pendleton, OR (live Freeze
+Warning, a third distinct hazard family) -- using only data edits
+(`facilities.yaml`/`employees.yaml`), no source code touched. Both
+evaluated correctly on the first request: zone resolution, CAP scoring,
+posture mapping, rationale generation, notification recipients, and
+the full UI all worked immediately. San Diego's zone turned up 9
+simultaneous distinct active alerts at check time (a real multi-hazard
+day -- Flash Flood Warning, Coastal Flood Warning, Tropical Storm
+Watch, etc.); the max-of-government-tier logic correctly picked the
+single highest-scoring one (Flash Flood Warning) as the driving source
+without being confused by the other 8. This is good evidence the
+system generalizes as designed, not hardcoded to the two originally-
+demoed hazard types -- and a natural real-world example of the
+multiple-concurrent-severe-alerts case flagged earlier as a possible
+future escalation-logic enhancement (not fixed here, still correct
+without it, just not escalated further).
 
 **Facility → alert lookup pipeline:**
 1. Facility record stores a precise **lat/lon** (authoritative for the API)
@@ -1186,6 +1211,70 @@ the oversight view behind Cognito/IAM").
       timeline; a real OpenAPI-driven codegen setup is a legitimate
       production-roadmap item, not pursued here.
 
+### AWS Migration Plan (documented 2026-10-11, not deployed)
+
+**Verified access, same day**: sourced the provided
+`.hackathon-account-auth` export file and confirmed real, working AWS
+credentials -- `aws sts get-caller-identity` succeeded as
+`WSParticipantRole/Participant` in account `504662347899`
+(`us-west-2`), with `AdministratorAccess` attached. This is a live AWS
+Workshop Studio participant account, not a dead/placeholder credential
+set -- a real deploy is genuinely possible if time allows, not purely
+theoretical. One caution found during the check: a Lambda named
+`WSConcurrencyCurtailer-DO-NOT-USE` suggests this is a shared/managed
+training account with some automatic cleanup or quota enforcement
+running -- resources created here may not be permanent and this isn't
+a dedicated personal account.
+
+**Why this migration is genuinely low-risk/straightforward** (confirmed
+by inspecting our own code, not assumed): every piece of this app was
+already built in a shape that maps directly onto an AWS primitive, with
+no architectural rework needed -- only a packaging/deploy step per
+piece. Concretely:
+
+| Current (local) | Maps to | Why it's a thin change |
+|---|---|---|
+| Express app (`server/src/index.ts`) | API Gateway (REST or HTTP API) + Lambda | Express route handlers are already small, stateless, request/response functions. Wrapping the existing `app` in `@vendia/serverless-express` (or `aws-serverless-express`) lets ALL current routes run behind one Lambda unchanged -- no handler-by-handler rewrite needed for a first pass. A later optimization could split hot paths (e.g. `/evaluate`) into their own Lambda, but isn't required to deploy. |
+| In-memory repository layer, file-backed from YAML (`repository/facilities.ts`, `employees.ts`, `schedule.ts`) | DynamoDB, single-table design | Already keyed by `facilityId` as the natural partition key (a deliberate choice made in section 1, confirmed again when adding San Diego/Pendleton this session -- zero code changes were needed to add new facilities, only data). A DynamoDB-backed `facilities.ts` would implement the exact same `getFacilityById`/`getAllFacilities` function signatures other code already calls -- callers never need to change. |
+| `data/decision-records/records.jsonl` (append-only, gitignored) | DynamoDB table, OR S3 (JSONL objects) | Already an append-only, timestamp-ordered log keyed by `facilityId` -- maps directly to a DynamoDB table with `facilityId` partition key + `recordId`/`evaluatedAt` sort key. The query patterns we already use (`getAllDecisionRecords`, `getDecisionRecordsForFacility`) are both trivial DynamoDB queries (scan vs. query-by-partition-key). |
+| `data/notification-log/notifications.jsonl` | Same pattern as decision records | Identical shape/reasoning -- separate table, same partition-key design. |
+| `data/facility-links/<facilityId>.json` (one file per facility, genuinely read/written at runtime) | DynamoDB item (one row per facility, or an attribute on the facility item) | This is the ONE piece of data in the whole app that's actually mutated at runtime today (not just appended) -- already the smallest, lowest-risk piece to move, and already proves the "real writes work" case before touching anything else. |
+| Angular build (`ng build`) | S3 (static hosting) + CloudFront | Zero application code changes -- `ng build` output is already static files. CloudFront in front of S3 for TLS + caching + a real public URL. |
+| NWS/NWPS/AQICN/Iowa DOT calls (`sources/*.ts`) | Unchanged -- still direct outbound HTTPS calls from whichever compute runs the backend | These were never local-only; they're real external APIs already. A Lambda calling them needs the same outbound internet access (default for Lambda, no VPC needed since none of these require a private network). |
+| AQICN API token (`.env`, `AQICN_API_TOKEN`) | AWS Secrets Manager or Lambda environment variable (encrypted) | `.env` loading is already isolated to one `dotenv.config()` call in `index.ts` -- swapping that for a Secrets Manager fetch (or just a Lambda env var, lower effort) touches one place, not scattered call sites. |
+| Hardcoded `localhost:3001`/`localhost:4200` (CORS origin, API base URL) | Real domain names (API Gateway invoke URL or custom domain; CloudFront URL) | Two config values to update (`ApiService.baseUrl` in Angular, `cors({ origin: ... })` in Express) -- not a redesign, just pointing at real URLs instead of localhost. |
+
+**What's NOT in this table because it genuinely doesn't exist yet**:
+real email/SMS dispatch (SNS for SMS, SES for email) -- the
+notification log currently only records what WOULD be sent, by design
+(user: "let's start out with just logged"). Wiring real dispatch is a
+natural next step once the rest is deployed -- SNS `Publish` for SMS
+(topic-less, direct-to-phone-number publish) and SES `SendEmail` are
+both simple, well-documented APIs with no architectural prerequisite
+beyond having a verified sender identity (SES) and a numbers budget
+(SNS, which costs real money per SMS -- worth flagging before wiring
+up for real, unlike everything else in this table which is free-tier-
+friendly for a demo's volume).
+
+**Suggested deployment order** (if pursued): (1) DynamoDB tables first
+(cheapest, zero risk, can run in parallel with the still-working local
+file-backed version), (2) Lambda + API Gateway wrapping the existing
+Express app unchanged via `serverless-express`, pointed at the new
+DynamoDB-backed repository layer, (3) S3 + CloudFront for the Angular
+build, pointed at the new API Gateway URL, (4) optionally, SNS/SES for
+real notification dispatch last, since it's the only genuinely new
+capability (everything else is a deploy target swap for existing
+logic). CDK (not CloudFormation console clicking) would define all of
+this, consistent with the user's actual CCNX CDK experience referenced
+earlier in this section.
+
+**Deliberately not done**: no authn/z was in scope for the local demo
+and remains out of scope here too -- a real deployment would need
+Cognito (or IAM-gated API Gateway) in front of this before it's
+actually safe to expose beyond a demo, but that's a distinct piece of
+work from the migration itself and shouldn't block documenting the
+migration path.
+
 ---
 
 ## 7. Challenge Requirements Checklist & Gap Tracker
@@ -1201,13 +1290,38 @@ go stale like the deliverable fields did before this review caught it.
 - [x] NWS/NOAA core source — live, no key, zone-based lookup
 - [x] Facility model (synthetic): location, hours, employee assignments,
       essential-personnel flags, telework eligibility
-- [ ] **GAP**: `accessibilityNotes` field exists on the facility record
-      and is populated in synthetic data, but is never displayed in the
-      API response or UI. Named explicitly in the challenge
-      ("accessibility needs"). Trivial fix — just surface it.
+- [x] **Closed 2026-10-11.** `accessibilityNotes` -- `/evaluate` now
+      also returns `address`/`hours`/`buildingType`/`accessibilityNotes`
+      (previously only `facilityName`), displayed as a compact detail
+      line under the posture header. Also answers an earlier open
+      question ("should we show basic facility info toward the top of
+      the page") -- same fix covers both.
 - [x] At least one supplementary signal — exceeded: USGS/NWPS (river
-      gauge) + AQICN (air quality), both real/live/scored. GA 511/KDKD
-      exist as narrative-only stretch sources.
+      gauge) + AQICN (air quality) + **Iowa DOT road conditions (added
+      2026-10-11)**, all real/live/scored. GA 511/KDKD exist as
+      narrative-only stretch sources.
+      **Iowa DOT implementation note**: `server/src/sources/iowaDot.ts`
+      + `evaluator/iowaDotScoring.ts`. Confirmed live, free, no key --
+      ArcGIS FeatureServer spatial query (`geometry`+`distance`+`units`
+      params), returning road segments within 10 miles of a facility
+      point rather than fetching the full ~1000-segment statewide feed.
+      Scores the WORST condition found among nearby segments using the
+      confirmed 5-value legend (Impassable > Travel Not Advised >
+      Completely Covered > Partially Covered > Seasonal), scored off
+      the STRING `ROAD_CONDITION` field (not the numeric code, whose
+      full mapping was never independently confirmed beyond
+      `Seasonal=10` -- see section 1's existing Open Questions
+      resolution). "All nearby segments Seasonal" is `absent`, not a
+      scored 0, consistent with section 2's "absence is not evidence of
+      normalcy" rule. Iowa-only (`isApplicable` checks
+      `facility.address.state === "IA"`) -- this is a per-state
+      platform, not nationwide; other states' CARS511 instances exist
+      but aren't wired up. Verified live: Clinton (IA) correctly
+      includes it (9 segments checked, all Seasonal -> absent); Great
+      Falls (MT) correctly excludes it entirely, not even attempted.
+      This is the registry-refactor payoff from earlier the same day --
+      adding this 3rd source required zero changes to runEvaluation's
+      control flow, just one new adapter file + one registry entry.
 
 ### Scope: the decision logic
 - [x] Graded recommendation, not binary — five-band posture ladder,
@@ -1365,13 +1479,39 @@ POSTURE, not per essential-flag.
    this list that's an explicit, named challenge requirement with zero
    implementation. Everything below this is a stretch/nice-to-have,
    not a gap against the challenge text.
-5. **New, not yet started**: supplemental-source refactor follow-on --
-   `usgsAdapter`/`aqicnAdapter` (`SupplementalAdapter` interface, added
-   2026-10-11) only cover the two sources already built. Iowa DOT road
-   conditions (confirmed scorable, see section 1) was documented as
-   "build if time allows" before the registry existed; now that adding
-   a source is a single adapter file, this is cheaper to pick up than
-   it was when first deprioritized.
+5. ~~Supplemental-source refactor follow-on (Iowa DOT)~~ — **done**,
+   see section 1 above
+6. ~~Verify new locations handled with zero code changes~~ — **done**,
+   see section 1's "Verification" note above (San Diego CA, Pendleton OR)
+7. **Closed 2026-10-11.** Per-facility custom reference links --
+   lets a facility manager attach curated (not scored/fetched) links
+   specific to one facility, generalizing the KDKD/GA-511 finding from
+   section 1 into a reusable feature instead of a one-off adapter.
+   `server/src/repository/facilityLinks.ts` -- genuinely writable at
+   runtime (unlike the rest of the facility record, which stays
+   read-only seed data per the design discussion below), one JSON file
+   per facility under `data/facility-links/` (gitignored, runtime
+   data). Full CRUD: `GET/POST /api/facilities/:id/links`,
+   `DELETE /api/facilities/:id/links/:linkId`, URL validated
+   server-side (`isValidHttpUrl`) before being accepted. New route
+   `/facility/:id/edit` (`FacilityEditComponent`) shows the rest of the
+   facility record READ-ONLY alongside the editable links list.
+   **Design decision (same day)**: scoped to links only, not full
+   facility editing -- `facilities.yaml` is hand-authored seed data
+   cached in memory at server start (see `repository/facilities.ts`);
+   making coordinates/riverGaugeId editable would need real file-
+   rewrite + cache-invalidation work, and a bad lat/lon edit could
+   silently break that facility's NWS zone resolution with no obvious
+   error pointing back at the edit. Links are safe to make writable
+   because nothing else in the system depends on them. Dashboard also
+   got more prominent facility details (bigger bordered block instead
+   of a thin muted line) as part of the same change, directly
+   addressing an earlier open question about surfacing basic facility
+   info toward the top of the page.
+All items on this list are now closed. Remaining work is genuinely
+stretch (config UI for other registry internals, AWS migration,
+presentation/demo prep) -- see later sections of this doc and the
+Decision Log for anything added after this point.
 
 Also closed this round, found via user manual-testing/screenshot review
 (not originally on this list, but real fixes, not scope creep):

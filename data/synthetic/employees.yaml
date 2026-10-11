@@ -122,3 +122,46 @@ employees:
     remoteStatus: in_office
     essentialPersonnel: true
     teleworkEligible: false
+
+  # Added 2026-10-11 along with the San Diego, CA and Pendleton, OR
+  # facilities -- verifying new locations/hazard types are handled
+  # automatically with zero code changes (section 1 decision log).
+  - employeeId: E1011
+    name: Reese Alvarado
+    phone: "555-0110"
+    email: reese.alvarado@example.gov
+    role: Soil Conservationist
+    homeFacilityId: USDA-FSA-CA-SANDIEGO
+    remoteStatus: in_office
+    essentialPersonnel: false
+    teleworkEligible: true
+
+  - employeeId: E1012
+    name: Jamie Okonkwo
+    phone: "555-0111"
+    email: jamie.okonkwo@example.gov
+    role: Facility Manager
+    homeFacilityId: USDA-FSA-CA-SANDIEGO
+    remoteStatus: in_office
+    essentialPersonnel: true
+    teleworkEligible: false
+
+  - employeeId: E1013
+    name: Skylar Petrov
+    phone: "555-0112"
+    email: skylar.petrov@example.gov
+    role: Forestry Technician
+    homeFacilityId: USDA-FS-OR-PENDLETON
+    remoteStatus: in_office
+    essentialPersonnel: false
+    teleworkEligible: true
+
+  - employeeId: E1014
+    name: Rowan Kessler
+    phone: "555-0113"
+    email: rowan.kessler@example.gov
+    role: District Ranger
+    homeFacilityId: USDA-FS-OR-PENDLETON
+    remoteStatus: in_office
+    essentialPersonnel: true
+    teleworkEligible: false

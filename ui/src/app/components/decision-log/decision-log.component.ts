@@ -107,6 +107,34 @@ export class DecisionLogComponent implements OnChanges {
     return POSTURE_LABELS[posture] ?? posture;
   }
 
+  /** Same embedded-offset timestamp formatting as facility-dashboard
+   * -- see that component's formatWithOffset for why the browser's
+   * local timezone isn't used. Decision records need this for the
+   * SAME reason: `sourceReportedAt` carries the source's own real
+   * offset, and `evaluatedAt`/notification `sentAt` are our own clock
+   * (UTC `Z` timestamps) -- both should show an explicit, correct
+   * offset rather than silently converting to viewer-local. */
+  formatWithOffset(isoString: string | null | undefined): string {
+    if (!isoString) return '';
+    const offsetMatch = isoString.match(/([+-]\d{2}:\d{2})$/);
+    const offset = offsetMatch ? offsetMatch[1] : null;
+
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
+
+    if (!offset) {
+      return `${date.toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' })} UTC`;
+    }
+
+    const sign = offset[0];
+    const [offsetHours, offsetMinutes] = offset.slice(1).split(':').map(Number);
+    const totalOffsetMinutes = (sign === '-' ? -1 : 1) * (offsetHours * 60 + offsetMinutes);
+
+    const shifted = new Date(date.getTime() + totalOffsetMinutes * 60000);
+    const formatted = shifted.toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' });
+    return `${formatted} (UTC${offset})`;
+  }
+
   /** Same emphasis-marker rendering as facility-dashboard -- see that
    * component's renderRationale for why innerHTML is safe here. */
   renderRationale(text: string): string {
