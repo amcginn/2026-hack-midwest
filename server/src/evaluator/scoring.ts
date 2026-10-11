@@ -52,20 +52,29 @@ export function scoreNwsAlert(
   certainty: NwsCertainty,
   urgency: NwsUrgency,
 ): NwsScoreResult {
-  if (severity === "Unknown" || certainty === "Unknown") {
+  const severityBase = SEVERITY_BASE[severity as Exclude<NwsSeverity, "Unknown">];
+  const certaintyModifier = CERTAINTY_MODIFIER[certainty as Exclude<NwsCertainty, "Unknown">];
+
+  // Treat "Unknown" OR any value outside our known enum (e.g. a future
+  // CAP extension NWS might add) as insufficient_data rather than
+  // silently producing NaN. Confirmed via testing that an unrecognized
+  // string value previously fell through to a NaN postureScore.
+  if (severityBase === undefined || certaintyModifier === undefined) {
     return {
       status: "insufficient_data",
       note: "Alert active but lacks standard severity/certainty data; shown for awareness, not scored.",
     };
   }
 
-  const severityBase = SEVERITY_BASE[severity];
-  const certaintyModifier = CERTAINTY_MODIFIER[certainty];
-  const postureScore = Math.min(4, Math.max(0, severityBase * certaintyModifier));
+  const rawScore = severityBase * certaintyModifier;
+  // Round to 2 decimal places to avoid floating-point noise
+  // (e.g. 3 * 0.1 producing 0.30000000000000004) leaking into the UI
+  // or decision records.
+  const postureScore = Math.round(Math.min(4, Math.max(0, rawScore)) * 100) / 100;
 
   return {
     status: "scored",
     postureScore,
-    note: URGENCY_NOTES[urgency],
+    note: URGENCY_NOTES[urgency] ?? URGENCY_NOTES.Unknown,
   };
 }

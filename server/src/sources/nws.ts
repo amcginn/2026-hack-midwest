@@ -15,6 +15,7 @@ import type { SourceOutcome } from "./types";
 
 const USER_AGENT = "usda-facility-decisions-hackathon (contact: hackmidwest-demo)";
 const NWS_BASE = "https://api.weather.gov";
+const REQUEST_TIMEOUT_MS = 8000;
 
 interface NwsPointResponse {
   properties: {
@@ -49,23 +50,49 @@ function extractZoneId(zoneUrl: string): string {
 async function resolveCountyZone(lat: number, lon: number): Promise<string> {
   const res = await fetch(`${NWS_BASE}/points/${lat},${lon}`, {
     headers: { "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!res.ok) {
     throw new Error(`NWS /points lookup failed: ${res.status} ${res.statusText}`);
   }
-  const body = (await res.json()) as NwsPointResponse;
-  return extractZoneId(body.properties.county);
+
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    throw new Error("NWS /points returned malformed JSON");
+  }
+
+  const county = (body as Partial<NwsPointResponse>)?.properties?.county;
+  if (typeof county !== "string" || county.length === 0) {
+    throw new Error("NWS /points response missing expected properties.county field");
+  }
+
+  return extractZoneId(county);
 }
 
 async function fetchActiveAlertsForZone(zoneId: string): Promise<NwsAlertFeature[]> {
   const res = await fetch(`${NWS_BASE}/alerts/active?zone=${zoneId}`, {
     headers: { "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!res.ok) {
     throw new Error(`NWS /alerts/active lookup failed: ${res.status} ${res.statusText}`);
   }
-  const body = (await res.json()) as NwsAlertsResponse;
-  return body.features;
+
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    throw new Error("NWS /alerts/active returned malformed JSON");
+  }
+
+  const features = (body as Partial<NwsAlertsResponse>)?.features;
+  if (!Array.isArray(features)) {
+    throw new Error("NWS /alerts/active response missing expected features array");
+  }
+
+  return features;
 }
 
 /**
@@ -77,15 +104,34 @@ export async function evaluateNwsAlerts(lat: number, lon: number): Promise<Sourc
   const zoneId = await resolveCountyZone(lat, lon);
   const alerts = await fetchActiveAlertsForZone(zoneId);
 
-  return alerts.map((alert): SourceOutcome => {
-    const p = alert.properties;
+  const outcomes: SourceOutcome[] = [];
+
+  for (const alert of alerts) {
+    // One malformed alert record should not take down the whole
+    // facility evaluation -- skip it and surface it as insufficient_data
+    // so it's still visible rather than silently dropped.
+    const p = alert?.properties;
+    if (!p || typeof p.event !== "string") {
+      outcomes.push({
+        source: "NWS",
+        tier: "government",
+        signal: "Unparseable alert",
+        status: "insufficient_data",
+        weight: 1.0,
+        detail: { rawAlert: alert },
+        note: "Received an alert record missing expected fields; shown for awareness, not scored.",
+        timestamp: new Date().toISOString(),
+      });
+      continue;
+    }
+
     const result = scoreNwsAlert(
       p.severity as NwsSeverity,
       p.certainty as NwsCertainty,
       p.urgency as NwsUrgency,
     );
 
-    return {
+    outcomes.push({
       source: "NWS",
       tier: "government",
       signal: p.event,
@@ -100,8 +146,10 @@ export async function evaluateNwsAlerts(lat: number, lon: number): Promise<Sourc
         areaDesc: p.areaDesc,
       },
       note: result.note,
-      timestamp: p.effective,
+      timestamp: p.effective ?? new Date().toISOString(),
       rawRef: p["@id"],
-    };
-  });
+    });
+  }
+
+  return outcomes;
 }
