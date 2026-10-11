@@ -809,6 +809,53 @@ less."
   - 2.5–3.5 telework / unscheduled leave
   - 3.5+ closure
 
+**CORRECTION (2026-10-11, found during implementation)**: the weighted-
+average formula above was implemented and tested against real live
+data, and a real flaw surfaced immediately. Walked through three
+concrete scenarios with the user:
+- Active tornado warning, no flood/AQI issue -> NWS=4.0 diluted by two
+  unrelated "normal" supplemental readings down to ~2.1 (Early
+  Dismissal), two full bands below where a tornado warning should land.
+- Upstream storm causing days of downstream flooding, no active NWS
+  alert for this specific facility -> works correctly today, since USGS
+  alone (absent NWS) isn't diluted by anything.
+- Wildfire smoke spiking AQI, unrelated to flood/wind -> also works
+  correctly today for the same reason (AQI alone, nothing to dilute it).
+
+**The actual problem**: averaging only breaks when a strong government
+signal is present ALONGSIDE scored (not absent) supplemental readings
+that are reporting "normal" for an unrelated hazard dimension. A tornado
+risk of 4 and a flood risk of 0 should NOT average to 2 -- these sources
+mostly answer DIFFERENT questions (wind/storm vs. flood vs. air
+quality), and we do not currently have per-source hazard-dimension
+tagging that would let us correctly decide when to blend (same
+dimension, corroborating) vs. when to take a max (different dimensions,
+independent risks). Building that tagging correctly is real design work,
+not a quick fix.
+
+**Decision (per user)**: don't force a blended single number to drive
+the recommendation yet. Simplify:
+- `recommendedScore`/posture is now driven by the single
+  highest-scoring **government-tier source only** (NWS). This matches
+  both the challenge's framing ("the goal is not to automate the
+  decision... make sure the person has everything they need") and
+  avoids a confidently-wrong blended number.
+- Supplemental sources are still fetched, scored, and shown in full
+  (unchanged) -- just not blended into the posture number. The facility
+  manager sees all of it, un-diluted.
+- The old weighted-average is still computed and returned as
+  `experimentalBlendedScore`, explicitly labeled as reference-only / not
+  authoritative, since it's known to be wrong across unrelated hazard
+  dimensions.
+- **TODO, come back to this**: tag each source with a hazard dimension
+  and only blend within a dimension (e.g. NWS Flood Warning + USGS gauge
+  both speaking to flood risk specifically should corroborate/average;
+  NWS Tornado Warning + USGS gauge should not). Take the max across
+  dimensions. Not attempted this round -- needs real design time.
+- Weights in the table above are no longer load-bearing for the
+  recommendation (only used in the reference-only blended score) --
+  kept in the table for whenever the hazard-dimension work happens.
+
 **Custom per-facility sources (extensibility pattern, 2026-10-11)**: the
 KDKD (Clinton, IA school closings) finding is a worked example of a
 source that's facility/locality-specific rather than a general nationwide
@@ -1526,3 +1573,34 @@ pressure later.
   (reject matches beyond 100km) using the station's own returned
   coordinates, re-verified both the rejection case and that real
   Iowa/Montana facilities still score correctly.
+- **2026-10-11**: Built the aggregation/repository layer and ran a real
+  evaluation end-to-end for the first time (Iowa facility: live NWS
+  Flood Warning + USGS/NWPS + AQICN + synthetic employee roster +
+  schedule applicability). Immediately found the weighted-average
+  formula produces a wrong result in practice: the live severe NWS
+  Flood Warning (score 3.0) got diluted to 1.58 (Early Dismissal) by
+  two unrelated "all clear" supplemental readings. Walked through
+  tornado/upstream-flood/wildfire-smoke scenarios with the user and
+  confirmed the root cause: averaging across unrelated hazard
+  dimensions (wind/storm vs. flood vs. air quality) is categorically
+  wrong, not a tuning problem -- we lack source-level hazard-dimension
+  tagging needed to average correctly within a dimension vs. max
+  across dimensions. Per user direction, simplified rather than guess:
+  posture recommendation now driven by the highest-scoring government
+  (NWS) source alone; supplemental sources shown in full but not
+  blended into the number; old weighted average kept as
+  `experimentalBlendedScore`, explicitly non-authoritative. Hazard-
+  dimension-aware blending logged as a real TODO for later, not solved
+  tonight. Verified live: Iowa facility now correctly recommends
+  Telework/Unscheduled Leave (score 3.0) matching the actual severe
+  flood warning, not diluted by the calm river gauge and clean air
+  readings shown alongside it.
+- **2026-10-11**: Built the full repository layer
+  (`server/src/repository/`): facilities, employees, schedule entries,
+  all file-backed from `data/synthetic/*.yaml`, DynamoDB-key-shaped per
+  section 6. Implemented and verified the "who's applicable at a
+  facility today" rule from section 1 exactly against the real
+  synthetic data (Jordan/Pat included normally, Avery excluded
+  on_detail, Morgan excluded telework, Taylor included via the
+  in_office_today exception -- the specific case the data model
+  redesign was built to handle, confirmed working end-to-end).

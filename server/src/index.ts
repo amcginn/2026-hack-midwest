@@ -10,6 +10,12 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { evaluateNwsAlerts } from "./sources/nws";
 import { evaluateUsgsGaugeHeight } from "./sources/usgs";
 import { evaluateAqicn } from "./sources/aqicn";
+import { getAllFacilities, getFacilityById } from "./repository/facilities";
+import { getNotificationRecipients } from "./repository/applicability";
+import { aggregateSources } from "./evaluator/aggregate";
+import { scoreToPosture, POSTURE_LABELS } from "./evaluator/posture";
+import { buildRationale } from "./rationale/templates";
+import type { SourceOutcome } from "./sources/types";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
@@ -93,6 +99,90 @@ app.get("/api/sources/aqicn", async (req: Request, res: Response) => {
     const message = err instanceof Error ? err.message : String(err);
     res.status(502).json({ error: "AQICN lookup failed", detail: message });
   }
+});
+
+app.get("/api/facilities", (_req: Request, res: Response) => {
+  res.json({ facilities: getAllFacilities() });
+});
+
+/**
+ * Full facility evaluation: fetches every configured source for the
+ * facility, aggregates per section 4, maps to a posture, computes
+ * applicable notification recipients per section 1, and builds the
+ * templated rationale per section 5.
+ *
+ * Example: GET /api/facilities/USDA-FSA-IA-CLINTON/evaluate?date=2026-10-11
+ */
+app.get("/api/facilities/:facilityId/evaluate", async (req: Request, res: Response) => {
+  const { facilityId } = req.params;
+  const date = typeof req.query.date === "string" ? req.query.date : new Date().toISOString().slice(0, 10);
+
+  const facility = getFacilityById(facilityId);
+  if (!facility) {
+    res.status(404).json({ error: `Unknown facilityId: ${facilityId}` });
+    return;
+  }
+
+  const { lat, lon } = facility.coordinates;
+  const outcomes: SourceOutcome[] = [];
+  const sourceErrors: Array<{ source: string; error: string }> = [];
+
+  // Each source is fetched independently -- one source failing (e.g. a
+  // network blip) should not take down the whole evaluation. Matches
+  // the per-adapter resilience already built into each adapter.
+  const results = await Promise.allSettled([
+    evaluateNwsAlerts(lat, lon),
+    facility.riverGaugeId
+      ? evaluateUsgsGaugeHeight(facility.riverGaugeId).then((o) => [o])
+      : Promise.resolve<SourceOutcome[]>([]),
+    evaluateAqicn(lat, lon).then((o) => [o]),
+  ]);
+
+  const sourceNames = ["NWS", "USGS/NWPS", "AQICN"];
+  results.forEach((result, i) => {
+    if (result.status === "fulfilled") {
+      outcomes.push(...result.value);
+    } else {
+      const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
+      sourceErrors.push({ source: sourceNames[i], error: message });
+    }
+  });
+
+  const { recommendedScore, drivingSource, experimentalBlendedScore, scoredSources, excludedSources } =
+    aggregateSources(outcomes);
+  const posture = recommendedScore !== undefined ? scoreToPosture(recommendedScore) : "normal";
+  const supplementalScored = scoredSources.filter((s) => s.tier === "supplemental");
+  const rationale = buildRationale(facility.name, posture, drivingSource, supplementalScored);
+  const recipients = getNotificationRecipients(facilityId, date);
+
+  res.json({
+    facilityId,
+    facilityName: facility.name,
+    date,
+    posture,
+    postureLabel: POSTURE_LABELS[posture],
+    recommendedScore: recommendedScore ?? null,
+    // Reference only -- known to be wrong across unrelated hazard
+    // dimensions (see evaluator/aggregate.ts module doc, 2026-10-11).
+    // Does NOT drive `posture` above.
+    experimentalBlendedScore: experimentalBlendedScore ?? null,
+    rationale,
+    sources: {
+      government: scoredSources.filter((s) => s.tier === "government"),
+      supplemental: supplementalScored,
+      excluded: excludedSources,
+    },
+    notification: {
+      recipientCount: recipients.length,
+      recipients: recipients.map((r) => ({
+        employeeId: r.employee.employeeId,
+        name: r.employee.name,
+        essentialPersonnel: r.employee.essentialPersonnel,
+        reason: r.reason,
+      })),
+    },
+    sourceErrors,
+  });
 });
 
 app.listen(PORT, () => {

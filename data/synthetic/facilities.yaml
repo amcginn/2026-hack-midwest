@@ -16,6 +16,10 @@ facilities:
     hours: "08:00-16:30"
     buildingType: office
     accessibilityNotes: ground-floor ADA accessible
+    # Optional per-facility supplemental-source config. riverGaugeId is
+    # the USGS site number (NWPS accepts it directly -- see section 1
+    # decision log 2026-10-11). Not every facility will have one.
+    riverGaugeId: "05420500"
     notes: >
       Primary/lead demo facility (finalized 2026-10-11). NWS Flood
       Warning scenario, confirmed live and stable across repeated
