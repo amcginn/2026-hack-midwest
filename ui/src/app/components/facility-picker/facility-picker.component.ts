@@ -1,6 +1,8 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { Facility } from '../../models/facility.model';
 
@@ -28,7 +30,7 @@ export class FacilityPickerComponent implements OnInit {
   loading = true;
   error: string | null = null;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private router: Router) {}
 
   ngOnInit(): void {
     this.api.getFacilities().subscribe({
@@ -36,6 +38,7 @@ export class FacilityPickerComponent implements OnInit {
         this.facilities = res.facilities;
         this.states = [...new Set(this.facilities.map((f) => f.address.state))].sort();
         this.loading = false;
+        this.syncFromCurrentRoute();
       },
       error: (err) => {
         this.error = 'Could not load facility list. Is the backend running on :3001?';
@@ -43,6 +46,29 @@ export class FacilityPickerComponent implements OnInit {
         console.error(err);
       },
     });
+
+    // Keep the picker's dropdowns in sync with direct navigation/deep
+    // links to /facility/:facilityId, not just picker-driven selection.
+    this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
+      this.syncFromCurrentRoute();
+    });
+  }
+
+  /** Reads the current /facility/:facilityId route (if any) and
+   * pre-selects the matching state/office in the dropdowns, so a
+   * refreshed or directly-visited URL shows a consistent picker state
+   * rather than blank dropdowns next to a populated dashboard. */
+  private syncFromCurrentRoute(): void {
+    if (this.facilities.length === 0) return;
+
+    const urlFacilityId = this.router.url.match(/\/facility\/([^/?#]+)/)?.[1];
+    if (!urlFacilityId || urlFacilityId === this.selectedFacilityId) return;
+
+    const facility = this.facilities.find((f) => f.facilityId === urlFacilityId);
+    if (!facility) return;
+
+    this.selectedState = facility.address.state;
+    this.selectedFacilityId = facility.facilityId;
   }
 
   get facilitiesInSelectedState(): Facility[] {
