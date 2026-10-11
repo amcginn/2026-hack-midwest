@@ -1530,11 +1530,9 @@ POSTURE, not per essential-flag.
    **done**, see Deliverable 2 above
 3. ~~Notification message + channel routing~~ — **done**, see
    Deliverable 3 above
-4. **Display `accessibilityNotes`** — trivial, still not done.
-   **Now the highest remaining priority** -- the only item left on
-   this list that's an explicit, named challenge requirement with zero
-   implementation. Everything below this is a stretch/nice-to-have,
-   not a gap against the challenge text.
+4. ~~Display `accessibilityNotes`~~ — **done** (same pass as the
+   facility detail/profile section work -- see Deliverable section
+   above and "Scope: the data" checklist).
 5. ~~Supplemental-source refactor follow-on (Iowa DOT)~~ — **done**,
    see section 1 above
 6. ~~Verify new locations handled with zero code changes~~ — **done**,
