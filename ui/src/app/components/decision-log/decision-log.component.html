@@ -1,8 +1,8 @@
 <section class="decision-log">
   <h3>Decision Record History ({{ records.length }})</h3>
   <p class="hint">
-    Every evaluation run for this facility is recorded here — what was known, when, and what
-    was decided — so a closure (or non-closure) decision can be reconstructed after the fact.
+    Every decision recorded for this facility — what was known, when, and what was decided —
+    so a closure (or non-closure) decision can be reconstructed after the fact.
   </p>
 
   @if (loading) {
@@ -13,7 +13,10 @@
     @for (record of records; track record.recordId) {
       <div class="record-card">
         <button class="record-summary" (click)="toggleExpanded(record.recordId)">
-          <span class="record-time">{{ record.evaluatedAt | date: 'medium' }}</span>
+          <span class="record-time">
+            {{ record.evaluatedAt | date: 'medium' }}
+            <span class="applies-to">— applies to {{ record.requestedDate }}</span>
+          </span>
           <span class="record-posture">{{ record.postureLabel }}</span>
           <span class="record-toggle">{{ expandedRecordId === record.recordId ? '▲' : '▼' }}</span>
         </button>

@@ -39,6 +39,12 @@
 
   .record-time {
     font-weight: 600;
+
+    .applies-to {
+      font-weight: 400;
+      color: #666;
+      font-size: 0.85rem;
+    }
   }
 }
 

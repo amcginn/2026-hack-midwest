@@ -38,7 +38,7 @@ export class ApiService {
 
   recordDecision(
     facilityId: string,
-    options: { decidedPosture?: string; decidedBy?: string; notes?: string } = {},
+    options: { date?: string; decidedPosture?: string; decidedBy?: string; notes?: string } = {},
   ): Observable<DecisionRecord> {
     return this.http.post<DecisionRecord>(
       `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/decisions`,

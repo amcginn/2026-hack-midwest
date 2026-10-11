@@ -40,6 +40,10 @@
       </p>
       <div class="decision-form">
         <label>
+          This decision applies to
+          <input type="date" [(ngModel)]="decisionDate" />
+        </label>
+        <label>
           Posture to record
           <select [(ngModel)]="decidedPostureOverride">
             <option [value]="evaluation.posture">Use system recommendation ({{ evaluation.postureLabel }})</option>
@@ -58,6 +62,13 @@
           Notes (optional)
           <textarea [(ngModel)]="decisionNotes" rows="2" placeholder="Any context not captured above"></textarea>
         </label>
+        @if (!isDecisionDateToday()) {
+          <p class="future-date-caveat">
+            This records staffing for {{ decisionDate }}, but weather and air/river conditions
+            above are current readings, not a forecast for that date. Re-check conditions closer
+            to that day before relying on this decision.
+          </p>
+        }
         <button class="record-button" (click)="recordDecision()" [disabled]="recordingDecision">
           {{ recordingDecision ? 'Recording…' : 'Record Decision' }}
         </button>

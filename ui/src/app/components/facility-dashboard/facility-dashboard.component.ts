@@ -18,7 +18,7 @@ const POSTURE_CLASS: Record<Posture, string> = {
  * Per-source severity classification, mirroring server's
  * evaluator/posture.ts bucket boundaries but applied per-source rather
  * than only to the aggregate. Lets each source card carry its own
- * color/icon cue so a judge can scan the dashboard at a glance rather
+ * color/icon cue so a reader can scan the dashboard at a glance rather
  * than reading every note to find what's actually abnormal.
  */
 export type SourceSeverityClass = 'severity-none' | 'severity-low' | 'severity-moderate' | 'severity-high' | 'severity-severe';
@@ -30,6 +30,15 @@ const SEVERITY_ICON: Record<SourceSeverityClass, string> = {
   'severity-high': '⛔',
   'severity-severe': '⛔',
 };
+
+/** Format a Date as YYYY-MM-DD for an <input type="date"> value, using
+ * local time (not UTC) so "today" matches what the user's clock says. */
+function toDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function scoreToSeverityClass(score: number | undefined): SourceSeverityClass {
   if (score === undefined) return 'severity-none';
@@ -60,6 +69,7 @@ export class FacilityDashboardComponent implements OnChanges {
   // Record-decision form state. See POST /decisions (server/src/index.ts) --
   // the only route that actually persists an audit record; viewing/
   // refreshing this dashboard does not (changed 2026-10-11, per user).
+  decisionDate = toDateInputValue(new Date());
   decidedPostureOverride = '';
   decidedBy = '';
   decisionNotes = '';
@@ -111,6 +121,7 @@ export class FacilityDashboardComponent implements OnChanges {
 
     this.api
       .recordDecision(this.facilityId, {
+        date: this.decisionDate || undefined,
         decidedPosture: this.decidedPostureOverride || undefined,
         decidedBy: this.decidedBy || undefined,
         notes: this.decisionNotes || undefined,
@@ -119,15 +130,16 @@ export class FacilityDashboardComponent implements OnChanges {
         next: (record) => {
           this.recordingDecision = false;
           this.recordedConfirmation = isOverride
-            ? `Decision recorded: ${record.postureLabel} (overriding the system's ${recommendedLabel} recommendation).`
-            : `Decision recorded: ${record.postureLabel}.`;
+            ? `Decision recorded for ${record.requestedDate}: ${record.postureLabel} (overriding the system's ${recommendedLabel} recommendation).`
+            : `Decision recorded for ${record.requestedDate}: ${record.postureLabel}.`;
           // Clear the form on successful submission -- a recorded
           // decision is done; leaving stale notes/decidedBy in the
           // fields invites accidental re-submission or confusion about
           // whether the next action is already filled in (found via
           // screenshot review, 2026-10-11). Reset the override back to
-          // the current recommendation, not blank, since that's still
-          // the correct default for a next decision.
+          // the current recommendation and the date back to today, not
+          // left on whatever was just submitted.
+          this.decisionDate = toDateInputValue(new Date());
           this.decidedPostureOverride = this.evaluation?.posture ?? '';
           this.decidedBy = '';
           this.decisionNotes = '';
@@ -141,6 +153,10 @@ export class FacilityDashboardComponent implements OnChanges {
           console.error('Could not record decision', err);
         },
       });
+  }
+
+  isDecisionDateToday(): boolean {
+    return this.decisionDate === toDateInputValue(new Date());
   }
 
   loadRoster(): void {
