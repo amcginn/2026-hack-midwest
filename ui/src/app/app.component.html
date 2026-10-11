@@ -1,0 +1,9 @@
+<main class="app-shell">
+  <h1>{{ title }}</h1>
+  <p class="tagline">
+    Live weather, river, and air-quality data prioritized for USDA facility decision-makers.
+  </p>
+
+  <app-facility-picker (facilitySelected)="onFacilitySelected($event)"></app-facility-picker>
+  <app-facility-dashboard [facilityId]="selectedFacilityId"></app-facility-dashboard>
+</main>

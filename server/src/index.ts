@@ -1,6 +1,7 @@
 import path from "node:path";
 import dotenv from "dotenv";
 import express, { type Request, type Response } from "express";
+import cors from "cors";
 
 // .env lives at the project root (2026-hack-midwest/.env), not inside
 // server/ -- shared across server/cdk/ui per docs/project-scope.md's
@@ -20,6 +21,11 @@ import type { SourceOutcome } from "./sources/types";
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
+// Local-dev CORS: UI runs on :4200 (Angular default), server on :3001.
+// No authn/z in this POC (explicit decision, section 6) -- CORS here
+// is purely about enabling the local dev server pairing, not a
+// security boundary.
+app.use(cors({ origin: "http://localhost:4200" }));
 app.use(express.json());
 
 app.get("/health", (_req: Request, res: Response) => {

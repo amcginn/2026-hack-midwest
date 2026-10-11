@@ -1,0 +1,95 @@
+<div class="dashboard">
+  @if (!facilityId) {
+    <p class="hint">Select a facility above to see its current status.</p>
+  } @else if (loading) {
+    <p>Evaluating live conditions…</p>
+  } @else if (error) {
+    <p class="error">{{ error }}</p>
+  } @else if (evaluation) {
+    <header class="posture-header" [ngClass]="postureClass(evaluation.posture)">
+      <h2>{{ evaluation.facilityName }}</h2>
+      <div class="posture-label">{{ evaluation.postureLabel }}</div>
+      <div class="score" *ngIf="evaluation.recommendedScore !== null">
+        Posture score: {{ evaluation.recommendedScore }} / 4
+      </div>
+    </header>
+
+    <section class="rationale">
+      <h3>Rationale</h3>
+      <p>{{ evaluation.rationale }}</p>
+    </section>
+
+    @if (evaluation.sourceErrors.length > 0) {
+      <section class="source-errors">
+        <h3>Source Errors</h3>
+        @for (err of evaluation.sourceErrors; track err.source) {
+          <p class="error">{{ err.source }}: {{ err.error }}</p>
+        }
+      </section>
+    }
+
+    <section class="sources government">
+      <h3>Government Sources (Primary)</h3>
+      @if (evaluation.sources.government.length === 0) {
+        <p class="muted">No active government-source alerts for this facility.</p>
+      }
+      @for (source of evaluation.sources.government; track source.rawRef) {
+        <div class="source-card">
+          <div class="source-title">{{ source.source }} — {{ source.signal }}</div>
+          <div class="source-detail">
+            Severity: {{ source.detail['severity'] }} | Certainty: {{ source.detail['certainty'] }} |
+            Urgency: {{ source.detail['urgency'] }}
+          </div>
+          <div class="source-note">{{ source.note }}</div>
+        </div>
+      }
+    </section>
+
+    <section class="sources supplemental">
+      <h3>Supplemental Sources (shown for context, not blended into the recommendation)</h3>
+      @if (evaluation.sources.supplemental.length === 0) {
+        <p class="muted">No supplemental source data available.</p>
+      }
+      @for (source of evaluation.sources.supplemental; track source.source) {
+        <div class="source-card">
+          <div class="source-title">{{ source.source }} — {{ source.signal }}</div>
+          <div class="source-note">{{ source.note }}</div>
+        </div>
+      }
+    </section>
+
+    @if (evaluation.sources.excluded.length > 0) {
+      <section class="sources excluded">
+        <h3>Shown for Awareness (not scored)</h3>
+        @for (source of evaluation.sources.excluded; track source.source) {
+          <div class="source-card muted">
+            <div class="source-title">{{ source.source }} — {{ source.signal }}</div>
+            <div class="source-note">{{ source.note }}</div>
+          </div>
+        }
+      </section>
+    }
+
+    <section class="notification">
+      <h3>Who Would Be Notified ({{ evaluation.notification.recipientCount }})</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Essential</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of evaluation.notification.recipients; track r.employeeId) {
+            <tr>
+              <td>{{ r.name }}</td>
+              <td>{{ r.essentialPersonnel ? 'Yes' : 'No' }}</td>
+              <td>{{ r.reason === 'in_office_today_exception' ? 'In office today (exception)' : 'Normal roster' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</div>

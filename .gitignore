@@ -22,3 +22,8 @@ build/
 
 # Temp/scratch
 /tmp/
+
+# Angular
+ui/node_modules/
+ui/dist/
+ui/.angular/

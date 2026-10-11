@@ -1,0 +1,37 @@
+<div class="facility-picker">
+  <h2>Facility Lookup</h2>
+  <p class="hint">Pick a state, then an office, to view its current status.</p>
+
+  @if (loading) {
+    <p>Loading facilities…</p>
+  } @else if (error) {
+    <p class="error">{{ error }}</p>
+  } @else {
+    <div class="selectors">
+      <label>
+        State
+        <select [(ngModel)]="selectedState" (ngModelChange)="onStateChange($event)" name="state">
+          <option value="" disabled selected>Select a state</option>
+          @for (state of states; track state) {
+            <option [value]="state">{{ state }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Office
+        <select
+          [(ngModel)]="selectedFacilityId"
+          (ngModelChange)="onFacilityChange($event)"
+          name="facility"
+          [disabled]="!selectedState"
+        >
+          <option value="" disabled selected>Select an office</option>
+          @for (facility of facilitiesInSelectedState; track facility.facilityId) {
+            <option [value]="facility.facilityId">{{ facility.name }} ({{ facility.address.city }})</option>
+          }
+        </select>
+      </label>
+    </div>
+  }
+</div>
