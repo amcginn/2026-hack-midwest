@@ -1,9 +1,35 @@
 <main class="app-shell">
-  <h1>{{ title }}</h1>
+  <h1><a routerLink="/">{{ title }}</a></h1>
   <p class="tagline">
-    Live weather, river, and air-quality data prioritized for USDA facility decision-makers.
+    Weather, river, air-quality, and road-condition data prioritized for USDA facility
+    decision-makers.
   </p>
 
   <app-facility-picker (facilitySelected)="onFacilitySelected($event)"></app-facility-picker>
+
+  @if (atRoot) {
+    <section class="overview">
+      <h2>About this system</h2>
+      <p>
+        Pick a state and office above to see a facility's current recommended posture, who it
+        would notify, and why — built to evaluate any operational signal relevant to a facility,
+        not only weather. Weather is the primary source today; the same evaluation and
+        notification pipeline is designed to take on additional signals as they come online.
+      </p>
+
+      <h3>Data sources currently connected</h3>
+      <ul class="source-list">
+        <li><strong>National Weather Service (NWS)</strong> — active alerts, used for every facility.</li>
+        <li><strong>USGS / NOAA river gauges</strong> — flood category and stage, for facilities near a monitored river.</li>
+        <li><strong>AQICN air quality</strong> — current AQI, for facilities within range of a monitoring station.</li>
+        <li><strong>Iowa DOT road conditions</strong> — winter road-condition reports, for Iowa facilities.</li>
+      </ul>
+      <p class="hint">
+        Each facility can also have its own curated reference links (local news, county emergency
+        management, etc.) — manage those from a facility's page once selected.
+      </p>
+    </section>
+  }
+
   <router-outlet></router-outlet>
 </main>
