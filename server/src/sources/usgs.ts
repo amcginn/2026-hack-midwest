@@ -13,6 +13,7 @@
 
 import { scoreByFloodCategory, scoreByThresholds, type GaugeFloodThresholds } from "../evaluator/usgsScoring";
 import type { SourceOutcome } from "./types";
+import type { SupplementalAdapter } from "./supplementalAdapter";
 
 const USER_AGENT = "usda-facility-decisions-hackathon (contact: hackmidwest-demo)";
 const NWPS_BASE = "https://api.water.noaa.gov/nwps/v1/gauges";
@@ -138,3 +139,19 @@ export async function evaluateUsgsGaugeHeight(identifier: string): Promise<Sourc
     timestamp: observed.validTime ?? new Date().toISOString(),
   };
 }
+
+/**
+ * SupplementalAdapter wrapper -- only applicable when the facility has
+ * a configured riverGaugeId (not every facility is near a monitored
+ * river). See supplementalAdapter.ts module doc for why this interface
+ * exists.
+ */
+export const usgsAdapter: SupplementalAdapter = {
+  name: "USGS/NWPS",
+  isApplicable: (facility) => Boolean(facility.riverGaugeId),
+  evaluate: async (facility) => {
+    if (!facility.riverGaugeId) return [];
+    const outcome = await evaluateUsgsGaugeHeight(facility.riverGaugeId);
+    return [outcome];
+  },
+};

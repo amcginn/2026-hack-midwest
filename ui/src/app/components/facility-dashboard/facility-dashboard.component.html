@@ -13,15 +13,6 @@
           <p>{{ err.source }}: {{ err.error }}</p>
         }
       </section>
-    } @else if (evaluation.noGovernmentDataAvailable) {
-      <section class="no-data-banner">
-        <strong>No official government hazard data available for this facility right now</strong>
-        <p>
-          NWS was reached successfully and reports nothing active — this is a real "nothing to
-          report," not a system failure. But it means this recommendation rests on supplemental
-          sources only. Review them below before treating this as a confirmed "all clear."
-        </p>
-      </section>
     }
 
     <header class="posture-header" [ngClass]="postureClass(evaluation.posture)">
@@ -31,6 +22,155 @@
         Posture score: {{ evaluation.recommendedScore }} / 4
       </div>
     </header>
+
+    <section class="roster">
+      <h3>
+        Facility Roster &amp; Today's Schedule ({{ roster?.rosterCount ?? '…' }})
+      </h3>
+      <p class="hint">
+        Everyone normally based at this facility, and their status for today. The building
+        roster and who's actually present or reachable right now are often not the same list.
+      </p>
+      @if (roster && roster.rosterCount === 0) {
+        <p class="muted">No employees are currently assigned to this facility.</p>
+      } @else if (roster) {
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Normal Pattern</th>
+              <th>Today</th>
+              <th>Essential</th>
+              <th>Would Be Notified</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of roster.roster; track e.employeeId) {
+              <tr [class.row-applicable]="e.applicableToday" [class.row-excluded]="!e.applicableToday">
+                <td>{{ e.name }}</td>
+                <td>{{ e.role }}</td>
+                <td>{{ remoteStatusLabel(e.remoteStatus) }}</td>
+                <td>
+                  {{ todayStatusLabel(e.todayStatus) }}
+                  @if (e.scheduleNote) {
+                    <div class="schedule-note">{{ e.scheduleNote }}</div>
+                  }
+                </td>
+                <td>{{ e.essentialPersonnel ? 'Yes' : 'No' }}</td>
+                <td>{{ e.applicableToday ? '✓ Yes' : '— No' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+
+    <section class="rationale">
+      <h3>Rationale</h3>
+      <p [innerHTML]="renderRationale(evaluation.rationale)"></p>
+
+      <dl class="explanation">
+        <div class="explanation-row">
+          <dt>Why this level</dt>
+          <dd>{{ evaluation.thresholdCrossed }}</dd>
+        </div>
+        <div class="explanation-row">
+          <dt>How sure</dt>
+          <dd>{{ evaluation.confidence }}</dd>
+        </div>
+        <div class="explanation-row">
+          <dt>What to watch for</dt>
+          <dd>{{ evaluation.whatWouldChange }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="sources government">
+      <h3>Government Sources (Primary)</h3>
+      @if (evaluation.sources.government.length === 0) {
+        @if (evaluation.sourceErrors.length > 0) {
+          <p class="muted">NWS could not be reached — see the error above. This is not a confirmed "nothing active."</p>
+        } @else {
+          <p class="muted">NWS was checked and reports nothing active for this facility right now.</p>
+        }
+      }
+      @for (source of evaluation.sources.government; track source.rawRef) {
+        <div class="source-card" [ngClass]="sourceSeverityClass(source)">
+          <div class="source-title">
+            <span class="severity-icon">{{ sourceSeverityIcon(source) }}</span>
+            {{ source.source }} — {{ source.signal }}
+          </div>
+          <div class="cap-badges">
+            <span class="cap-badge severity">Severity: {{ source.detail['severity'] }}</span>
+            <span class="cap-badge certainty">Certainty: {{ source.detail['certainty'] }}</span>
+            <span class="cap-badge urgency">Urgency: {{ source.detail['urgency'] }}</span>
+          </div>
+          <div class="source-note">{{ source.note }}</div>
+          @if (source.detail['onset'] || source.detail['ends']) {
+            <div class="source-window">
+              @if (detailDate(source, 'onset')) {
+                <span>Starts: {{ detailDate(source, 'onset') | date: 'medium' }}</span>
+              }
+              @if (detailDate(source, 'ends')) {
+                <span>Ends: {{ detailDate(source, 'ends') | date: 'medium' }}</span>
+              }
+            </div>
+          }
+          @if (affectedAreas(source).length > 0) {
+            <div class="source-areas">
+              Affected areas:
+              <ul>
+                @for (area of affectedAreas(source); track area) {
+                  <li>{{ area }}</li>
+                }
+              </ul>
+            </div>
+          }
+          @if (source.detail['description'] || source.detail['instruction']) {
+            <details class="alert-detail">
+              <summary>Full NWS alert text</summary>
+              @if (source.detail['description']) {
+                <p class="alert-description">{{ source.detail['description'] }}</p>
+              }
+              @if (source.detail['instruction']) {
+                <p class="alert-instruction"><strong>Instructions:</strong> {{ source.detail['instruction'] }}</p>
+              }
+            </details>
+          }
+          <div class="source-timestamp">Last updated: {{ source.timestamp | date: 'medium' }}</div>
+        </div>
+      }
+    </section>
+
+    <section class="sources supplemental">
+      <h3>Supplemental Sources (shown for context, not blended into the recommendation)</h3>
+      @if (evaluation.sources.supplemental.length === 0) {
+        <p class="muted">No supplemental source data available.</p>
+      }
+      @for (source of evaluation.sources.supplemental; track source.source) {
+        <div class="source-card" [ngClass]="sourceSeverityClass(source)">
+          <div class="source-title">
+            <span class="severity-icon">{{ sourceSeverityIcon(source) }}</span>
+            {{ source.source }} — {{ source.signal }}
+          </div>
+          <div class="source-note">{{ source.note }}</div>
+          <div class="source-timestamp">Last updated: {{ source.timestamp | date: 'medium' }}</div>
+        </div>
+      }
+    </section>
+
+    @if (evaluation.sources.excluded.length > 0) {
+      <section class="sources excluded">
+        <h3>Shown for Awareness (not scored)</h3>
+        @for (source of evaluation.sources.excluded; track source.source) {
+          <div class="source-card muted">
+            <div class="source-title">{{ source.source }} — {{ source.signal }}</div>
+            <div class="source-note">{{ source.note }}</div>
+          </div>
+        }
+      </section>
+    }
 
     <section class="record-decision">
       <h3>Record This Decision</h3>
@@ -79,105 +219,6 @@
       </div>
     </section>
 
-    <section class="roster">
-      <h3>
-        Facility Roster &amp; Today's Schedule ({{ roster?.rosterCount ?? '…' }})
-      </h3>
-      <p class="hint">
-        Everyone normally based at this facility, and their status for today. The building
-        roster and who's actually present or reachable right now are often not the same list.
-      </p>
-      @if (roster && roster.rosterCount === 0) {
-        <p class="muted">No employees are currently assigned to this facility.</p>
-      } @else if (roster) {
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Normal Pattern</th>
-              <th>Today</th>
-              <th>Essential</th>
-              <th>Would Be Notified</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (e of roster.roster; track e.employeeId) {
-              <tr [class.row-applicable]="e.applicableToday" [class.row-excluded]="!e.applicableToday">
-                <td>{{ e.name }}</td>
-                <td>{{ e.role }}</td>
-                <td>{{ remoteStatusLabel(e.remoteStatus) }}</td>
-                <td>
-                  {{ todayStatusLabel(e.todayStatus) }}
-                  @if (e.scheduleNote) {
-                    <div class="schedule-note">{{ e.scheduleNote }}</div>
-                  }
-                </td>
-                <td>{{ e.essentialPersonnel ? 'Yes' : 'No' }}</td>
-                <td>{{ e.applicableToday ? '✓ Yes' : '— No' }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-    </section>
-
-    <section class="rationale">
-      <h3>Rationale</h3>
-      <p>{{ evaluation.rationale }}</p>
-    </section>
-
-    <section class="sources government">
-      <h3>Government Sources (Primary)</h3>
-      @if (evaluation.sources.government.length === 0) {
-        <p class="muted">No active government-source alerts for this facility.</p>
-      }
-      @for (source of evaluation.sources.government; track source.rawRef) {
-        <div class="source-card" [ngClass]="sourceSeverityClass(source)">
-          <div class="source-title">
-            <span class="severity-icon">{{ sourceSeverityIcon(source) }}</span>
-            {{ source.source }} — {{ source.signal }}
-          </div>
-          <div class="cap-badges">
-            <span class="cap-badge severity">Severity: {{ source.detail['severity'] }}</span>
-            <span class="cap-badge certainty">Certainty: {{ source.detail['certainty'] }}</span>
-            <span class="cap-badge urgency">Urgency: {{ source.detail['urgency'] }}</span>
-          </div>
-          <div class="source-note">{{ source.note }}</div>
-          <div class="source-timestamp">Last updated: {{ source.timestamp | date: 'medium' }}</div>
-        </div>
-      }
-    </section>
-
-    <section class="sources supplemental">
-      <h3>Supplemental Sources (shown for context, not blended into the recommendation)</h3>
-      @if (evaluation.sources.supplemental.length === 0) {
-        <p class="muted">No supplemental source data available.</p>
-      }
-      @for (source of evaluation.sources.supplemental; track source.source) {
-        <div class="source-card" [ngClass]="sourceSeverityClass(source)">
-          <div class="source-title">
-            <span class="severity-icon">{{ sourceSeverityIcon(source) }}</span>
-            {{ source.source }} — {{ source.signal }}
-          </div>
-          <div class="source-note">{{ source.note }}</div>
-          <div class="source-timestamp">Last updated: {{ source.timestamp | date: 'medium' }}</div>
-        </div>
-      }
-    </section>
-
-    @if (evaluation.sources.excluded.length > 0) {
-      <section class="sources excluded">
-        <h3>Shown for Awareness (not scored)</h3>
-        @for (source of evaluation.sources.excluded; track source.source) {
-          <div class="source-card muted">
-            <div class="source-title">{{ source.source }} — {{ source.signal }}</div>
-            <div class="source-note">{{ source.note }}</div>
-          </div>
-        }
-      </section>
-    }
-
     <section class="notification">
       <h3>Who Would Be Notified ({{ evaluation.notification.recipientCount }})</h3>
       @if (evaluation.notification.recipientCount === 0) {
@@ -185,25 +226,83 @@
           No one would be notified. See the full roster below to confirm whether this facility
           has no seeded employees, or everyone happens to be excluded today.
         </p>
-      }
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Essential</th>
-            <th>Reason</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (r of evaluation.notification.recipients; track r.employeeId) {
+      } @else if (evaluation.posture === 'normal' && !notifyPanelExpanded) {
+        <p class="muted">Nothing currently warrants notifying anyone.</p>
+        <details class="notify-expand" (toggle)="notifyPanelExpanded = true">
+          <summary>Notify anyway (e.g. a power outage or other issue outside the tracked data sources)</summary>
+        </details>
+      } @else {
+        @if (evaluation.posture === 'normal') {
+          <details class="notify-expand" open (toggle)="onNotifyExpandToggle($event)">
+            <summary>Notify anyway (e.g. a power outage or other issue outside the tracked data sources)</summary>
+          </details>
+        }
+        <div class="notify-all-row">
+          <label class="notify-all-skip">
+            <input type="checkbox" [(ngModel)]="skipNotifyAllConfirm" />
+            Skip the confirmation prompt for Notify All (every send is still recorded in the log below)
+          </label>
+          <button class="notify-all-button" (click)="notifyAll()" [disabled]="notifyingAll">
+            {{ notifyingAll ? 'Notifying…' : 'Notify All' }}
+          </button>
+        </div>
+        @if (notifyAllConfirmation) {
+          <p class="notify-confirmation">✓ {{ notifyAllConfirmation }}</p>
+        }
+        <table>
+          <thead>
             <tr>
-              <td>{{ r.name }}</td>
-              <td>{{ r.essentialPersonnel ? 'Yes' : 'No' }}</td>
-              <td>{{ r.reason === 'in_office_today_exception' ? 'In office today (exception)' : 'Normal roster' }}</td>
+              <th>Name</th>
+              <th>Essential</th>
+              <th>Reason</th>
+              <th>Channel</th>
+              <th></th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (r of evaluation.notification.recipients; track r.employeeId) {
+              <tr>
+                <td>{{ r.name }}</td>
+                <td>{{ r.essentialPersonnel ? 'Yes' : 'No' }}</td>
+                <td>{{ r.reason === 'in_office_today_exception' ? 'In office today (exception)' : 'Normal roster' }}</td>
+                <td>
+                  <select [(ngModel)]="recipientChannel[r.employeeId]">
+                    <option value="email">Email</option>
+                    <option value="sms" [disabled]="!r.shortFormMessage">SMS</option>
+                  </select>
+                </td>
+                <td>
+                  <button
+                    class="notify-row-button"
+                    (click)="notifyOne(r)"
+                    [disabled]="notifyingEmployeeId === r.employeeId"
+                  >
+                    {{ notifyingEmployeeId === r.employeeId ? 'Notifying…' : 'Notify' }}
+                  </button>
+                </td>
+              </tr>
+              @if (notifiedConfirmationByEmployee[r.employeeId]) {
+                <tr class="notify-confirmation-row">
+                  <td colspan="5">✓ {{ notifiedConfirmationByEmployee[r.employeeId] }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+
+        <details class="draft-preview">
+          <summary>Preview / copy drafted message (in case it needs to be sent another way)</summary>
+          <label>
+            Recipient
+            <select [(ngModel)]="previewEmployeeId">
+              @for (r of evaluation.notification.recipients; track r.employeeId) {
+                <option [value]="r.employeeId">{{ r.name }}</option>
+              }
+            </select>
+          </label>
+          <textarea class="draft-textbox" rows="6" readonly [value]="previewMessageText()"></textarea>
+        </details>
+      }
     </section>
 
     <app-decision-log [facilityId]="facilityId"></app-decision-log>

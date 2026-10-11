@@ -9,15 +9,18 @@ import cors from "cors";
 // on dotenv's default cwd-relative lookup.
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { evaluateNwsAlerts } from "./sources/nws";
-import { evaluateUsgsGaugeHeight } from "./sources/usgs";
-import { evaluateAqicn } from "./sources/aqicn";
+import { evaluateUsgsGaugeHeight, usgsAdapter } from "./sources/usgs";
+import { evaluateAqicn, aqicnAdapter } from "./sources/aqicn";
+import type { SupplementalAdapter } from "./sources/supplementalAdapter";
 import { getAllFacilities, getFacilityById } from "./repository/facilities";
 import { getEmployeesByHomeFacility } from "./repository/employees";
 import { getScheduleEntries } from "./repository/schedule";
 import { getApplicableEmployees, getNotificationRecipients } from "./repository/applicability";
 import { aggregateSources } from "./evaluator/aggregate";
 import { scoreToPosture, POSTURE_LABELS } from "./evaluator/posture";
+import { buildExplanation } from "./evaluator/explain";
 import { buildRationale } from "./rationale/templates";
+import { buildNotificationMessages } from "./notification/templates";
 import type { SourceOutcome } from "./sources/types";
 import {
   buildDecisionRecord,
@@ -26,9 +29,28 @@ import {
   getDecisionRecordsForFacility,
   getDecisionRecordById,
 } from "./repository/decisionRecord";
+import {
+  buildNotificationLogEntry,
+  appendNotificationLogEntries,
+  getNotificationLogForFacility,
+  type NotificationChannel,
+} from "./repository/notificationLog";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
+
+// Supplemental (non-NWS) source registry. NWS stays hardcoded in
+// runEvaluation -- it's the one source explicitly named as "the core
+// source" in the challenge text and the only source that drives the
+// recommended posture. Everything else implements SupplementalAdapter
+// (see sources/supplementalAdapter.ts) so adding a new source (DOT
+// road conditions, power outage reporting, etc.) means writing one
+// adapter and adding it here -- no changes to runEvaluation's control
+// flow. Refactored 2026-10-11 from a hardcoded Promise.allSettled
+// array + parallel sourceNames array for error labeling, which was
+// fragile (adding a source in the wrong array slot would silently
+// mislabel its errors).
+const supplementalAdapters: SupplementalAdapter[] = [usgsAdapter, aqicnAdapter];
 
 // Local-dev CORS: UI runs on :4200 (Angular default), server on :3001.
 // No authn/z in this POC (explicit decision, section 6) -- CORS here
@@ -211,6 +233,12 @@ app.get("/api/facilities/:facilityId/evaluate", async (req: Request, res: Respon
     // Does NOT drive `posture` above.
     experimentalBlendedScore: evalResult.experimentalBlendedScore ?? null,
     rationale: evalResult.rationale,
+    // Deliverable #2's explicitly-named fields: "which threshold was
+    // crossed and by how much," "confidence," and "what would change
+    // the recommendation." See evaluator/explain.ts.
+    thresholdCrossed: evalResult.explanation.thresholdCrossed,
+    confidence: evalResult.explanation.confidence,
+    whatWouldChange: evalResult.explanation.whatWouldChange,
     sources: {
       government: evalResult.scoredSources.filter((s) => s.tier === "government"),
       supplemental: evalResult.supplementalScored,
@@ -240,21 +268,20 @@ async function runEvaluation(facilityId: string, date: string) {
   const outcomes: SourceOutcome[] = [];
   const sourceErrors: Array<{ source: string; error: string }> = [];
 
+  const applicableAdapters = supplementalAdapters.filter((a) => a.isApplicable(facility));
+
   const results = await Promise.allSettled([
     evaluateNwsAlerts(lat, lon),
-    facility.riverGaugeId
-      ? evaluateUsgsGaugeHeight(facility.riverGaugeId).then((o) => [o])
-      : Promise.resolve<SourceOutcome[]>([]),
-    evaluateAqicn(lat, lon).then((o) => [o]),
+    ...applicableAdapters.map((a) => a.evaluate(facility)),
   ]);
 
-  const sourceNames = ["NWS", "USGS/NWPS", "AQICN"];
+  const resultNames = ["NWS", ...applicableAdapters.map((a) => a.name)];
   results.forEach((result, i) => {
     if (result.status === "fulfilled") {
       outcomes.push(...result.value);
     } else {
       const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
-      sourceErrors.push({ source: sourceNames[i], error: message });
+      sourceErrors.push({ source: resultNames[i], error: message });
     }
   });
 
@@ -273,13 +300,27 @@ async function runEvaluation(facilityId: string, date: string) {
 
   const supplementalScored = scoredSources.filter((s) => s.tier === "supplemental");
   const rationale = buildRationale(facility.name, posture, drivingSource, supplementalScored, governmentSourceErrored);
+  const explanation = buildExplanation(posture, recommendedScore, drivingSource, governmentSourceErrored);
   const recipients = getNotificationRecipients(facilityId, date);
-  const notificationRecipients = recipients.map((r) => ({
-    employeeId: r.employee.employeeId,
-    name: r.employee.name,
-    essentialPersonnel: r.employee.essentialPersonnel,
-    reason: r.reason,
-  }));
+  const notificationRecipients = recipients.map((r) => {
+    const messages = buildNotificationMessages(
+      facility.name,
+      posture,
+      date,
+      drivingSource?.signal,
+      r.employee.essentialPersonnel,
+    );
+    return {
+      employeeId: r.employee.employeeId,
+      name: r.employee.name,
+      phone: r.employee.phone,
+      email: r.employee.email,
+      essentialPersonnel: r.employee.essentialPersonnel,
+      reason: r.reason,
+      longFormMessage: messages.longForm,
+      shortFormMessage: messages.shortForm,
+    };
+  });
 
   return {
     facility,
@@ -287,6 +328,7 @@ async function runEvaluation(facilityId: string, date: string) {
     recommendedScore,
     experimentalBlendedScore,
     rationale,
+    explanation,
     governmentSourceErrored,
     scoredSources,
     excludedSources,
@@ -337,6 +379,9 @@ app.post("/api/facilities/:facilityId/decisions", async (req: Request, res: Resp
     recommendedScore: evalResult.recommendedScore ?? null,
     experimentalBlendedScore: evalResult.experimentalBlendedScore ?? null,
     rationale: evalResult.rationale,
+    thresholdCrossed: evalResult.explanation.thresholdCrossed,
+    confidence: evalResult.explanation.confidence,
+    whatWouldChange: evalResult.explanation.whatWouldChange,
     governmentSourceErrored: evalResult.governmentSourceErrored,
     scoredSources: evalResult.scoredSources,
     excludedSources: evalResult.excludedSources,
@@ -355,6 +400,93 @@ app.post("/api/facilities/:facilityId/decisions", async (req: Request, res: Resp
   }
 
   res.status(201).json(record);
+});
+
+/**
+ * Log a notification send -- deliverable #3's "channel routing" plus
+ * the explicit-action audit trail the user asked for (2026-10-11,
+ * "I'd say audit as a separate log"). This does NOT send a real
+ * email/SMS (per user: "let's start out with just logged" -- real
+ * dispatch via the demo AWS account is a stretch item if time allows).
+ * Clicking "Notify" or "Notify All" IS the action being audited here;
+ * the log entry records exactly what message/channel was shown for
+ * each recipient at that moment.
+ *
+ * Re-runs a fresh evaluation (same reconstructability principle as
+ * POST /decisions) so the drafted message reflects current conditions
+ * at send time, not stale client state.
+ *
+ * Body:
+ *   date?: string
+ *   decisionRecordId?: string | null  -- links to a prior decision, if any
+ *   employeeIds?: string[]            -- specific recipients (per-row "Notify")
+ *   notifyAll?: boolean               -- true for the bulk "Notify All" action
+ *                                        (equivalent to selecting every current
+ *                                        recipient, logged the same way, fewer clicks)
+ *   channel?: "email" | "sms"         -- defaults to "email" if omitted
+ */
+app.post("/api/facilities/:facilityId/notifications", async (req: Request, res: Response) => {
+  const { facilityId } = req.params;
+  const date = typeof req.body?.date === "string" ? req.body.date : new Date().toISOString().slice(0, 10);
+  const decisionRecordId = typeof req.body?.decisionRecordId === "string" ? req.body.decisionRecordId : null;
+  const notifyAll = req.body?.notifyAll === true;
+  const requestedEmployeeIds: string[] = Array.isArray(req.body?.employeeIds) ? req.body.employeeIds : [];
+  const channel: NotificationChannel = req.body?.channel === "sms" ? "sms" : "email";
+
+  const evalResult = await runEvaluation(facilityId, date);
+  if (!evalResult) {
+    res.status(404).json({ error: `Unknown facilityId: ${facilityId}` });
+    return;
+  }
+
+  const targetRecipients = notifyAll
+    ? evalResult.notificationRecipients
+    : evalResult.notificationRecipients.filter((r) => requestedEmployeeIds.includes(r.employeeId));
+
+  if (targetRecipients.length === 0) {
+    res.status(400).json({ error: "No matching recipients to notify. Pass employeeIds or notifyAll=true." });
+    return;
+  }
+
+  const postureLabel = POSTURE_LABELS[evalResult.posture];
+  const entries = targetRecipients.map((r) =>
+    buildNotificationLogEntry({
+      facilityId,
+      facilityName: evalResult.facility.name,
+      decisionRecordId,
+      posture: evalResult.posture,
+      postureLabel,
+      employeeId: r.employeeId,
+      employeeName: r.name,
+      essentialPersonnel: r.essentialPersonnel,
+      channel,
+      messageText: channel === "sms" ? r.shortFormMessage ?? r.longFormMessage : r.longFormMessage,
+      sentViaBulkAction: notifyAll,
+    }),
+  );
+
+  try {
+    appendNotificationLogEntries(entries);
+  } catch (err) {
+    console.error("FAILED TO PERSIST NOTIFICATION LOG -- audit trail is incomplete:", err);
+    res.status(500).json({ error: "Failed to persist notification log" });
+    return;
+  }
+
+  res.status(201).json({ count: entries.length, entries });
+});
+
+/**
+ * Notification send history for a facility -- separate audit trail
+ * from decision records (see notification/templates.ts +
+ * repository/notificationLog.ts module docs for why).
+ *
+ * Example: GET /api/facilities/USDA-FSA-IA-CLINTON/notifications
+ */
+app.get("/api/facilities/:facilityId/notifications", (req: Request, res: Response) => {
+  const { facilityId } = req.params;
+  const entries = getNotificationLogForFacility(facilityId);
+  res.json({ count: entries.length, entries });
 });
 
 /**

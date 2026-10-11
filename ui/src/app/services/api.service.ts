@@ -1,7 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Facility, FacilityEvaluation, FacilityRoster, DecisionRecord } from '../models/facility.model';
+import {
+  Facility,
+  FacilityEvaluation,
+  FacilityRoster,
+  DecisionRecord,
+  NotificationLogEntry,
+  NotificationChannel,
+} from '../models/facility.model';
 
 @Injectable({
   providedIn: 'root',
@@ -43,6 +50,28 @@ export class ApiService {
     return this.http.post<DecisionRecord>(
       `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/decisions`,
       options,
+    );
+  }
+
+  sendNotifications(
+    facilityId: string,
+    options: {
+      date?: string;
+      decisionRecordId?: string | null;
+      employeeIds?: string[];
+      notifyAll?: boolean;
+      channel?: NotificationChannel;
+    },
+  ): Observable<{ count: number; entries: NotificationLogEntry[] }> {
+    return this.http.post<{ count: number; entries: NotificationLogEntry[] }>(
+      `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/notifications`,
+      options,
+    );
+  }
+
+  getNotificationLog(facilityId: string): Observable<{ count: number; entries: NotificationLogEntry[] }> {
+    return this.http.get<{ count: number; entries: NotificationLogEntry[] }>(
+      `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/notifications`,
     );
   }
 }

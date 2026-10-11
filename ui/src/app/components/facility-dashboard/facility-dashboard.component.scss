@@ -36,25 +36,13 @@
   }
 }
 
-.no-data-banner {
-  background: #fff8e1;
-  border: 2px solid #f9a825;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
-  color: #7a5c00;
-
-  strong {
-    display: block;
-    margin-bottom: 0.25rem;
-    font-size: 1.05rem;
-  }
-
-  p {
-    margin: 0.15rem 0;
-    font-size: 0.9rem;
-  }
-}
+// Removed 2026-10-11: the top-of-page amber "no official government
+// hazard data" banner (.no-data-banner) was dropped -- "nothing
+// active" is the common, routine case (there isn't severe weather
+// everywhere at once), and giving it the same visual weight as a real
+// data-source failure overstated how noteworthy it is. The same
+// checked-vs-missing distinction is still made, just as the quieter
+// in-section note under "Government Sources (Primary)" instead.
 
 .record-decision {
   background: #f5f5f5;
@@ -219,6 +207,32 @@ section {
   }
 }
 
+.explanation {
+  margin: 1rem 0 0;
+  border-top: 1px solid #eee;
+  padding-top: 0.75rem;
+
+  .explanation-row {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.3rem 0;
+    font-size: 0.9rem;
+    align-items: baseline;
+
+    dt {
+      flex: 0 0 160px;
+      font-weight: 600;
+      color: #444;
+    }
+
+    dd {
+      margin: 0;
+      flex: 1;
+      color: #333;
+    }
+  }
+}
+
 .source-card {
   border: 1px solid #ddd;
   border-left: 4px solid #ddd;
@@ -265,6 +279,48 @@ section {
   .source-note {
     font-size: 0.9rem;
     margin-top: 0.25rem;
+  }
+
+  .source-window {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: #444;
+    font-weight: 600;
+    margin-top: 0.3rem;
+  }
+
+  .source-areas {
+    font-size: 0.85rem;
+    color: #555;
+    margin-top: 0.3rem;
+
+    ul {
+      margin: 0.2rem 0 0;
+      padding-left: 1.2rem;
+    }
+  }
+
+  .alert-detail {
+    font-size: 0.85rem;
+    color: #333;
+    margin-top: 0.4rem;
+
+    summary {
+      cursor: pointer;
+      color: #1565c0;
+      font-size: 0.82rem;
+    }
+
+    .alert-description {
+      white-space: pre-line;
+      margin: 0.4rem 0;
+    }
+
+    .alert-instruction {
+      margin: 0.4rem 0 0;
+    }
   }
 
   .source-timestamp {
@@ -326,6 +382,123 @@ table {
     text-align: left;
     padding: 0.4rem 0.6rem;
     border-bottom: 1px solid #eee;
+  }
+}
+
+.notify-expand {
+  font-size: 0.88rem;
+  margin-bottom: 0.75rem;
+
+  summary {
+    cursor: pointer;
+    color: #1565c0;
+  }
+}
+
+.notify-all-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+
+  .notify-all-skip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: #555;
+  }
+
+  .notify-all-button {
+    padding: 0.45rem 1.1rem;
+    background: #1565c0;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: #0d47a1;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.notify-row-button {
+  padding: 0.3rem 0.7rem;
+  background: #fff;
+  color: #1565c0;
+  border: 1px solid #1565c0;
+  border-radius: 5px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #e3f2fd;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.notify-confirmation {
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin: 0 0 0.5rem;
+}
+
+.notify-confirmation-row td {
+  color: #2e7d32;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-bottom: 1px solid #eee;
+  padding-top: 0;
+}
+
+.draft-preview {
+  margin-top: 1rem;
+  font-size: 0.88rem;
+
+  summary {
+    cursor: pointer;
+    color: #1565c0;
+    font-weight: 600;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0.6rem 0;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  select {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
+    width: 240px;
+  }
+
+  .draft-textbox {
+    width: 100%;
+    font-family: inherit;
+    font-size: 0.88rem;
+    padding: 0.6rem;
+    resize: vertical;
+    box-sizing: border-box;
   }
 }
 

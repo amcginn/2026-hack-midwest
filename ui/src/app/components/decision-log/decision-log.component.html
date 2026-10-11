@@ -1,8 +1,8 @@
 <section class="decision-log">
   <h3>Decision Record History ({{ records.length }})</h3>
   <p class="hint">
-    Every decision recorded for this facility — what was known, when, and what was decided —
-    so a closure (or non-closure) decision can be reconstructed after the fact.
+    Every decision recorded for this facility, with the conditions on record at the time, so you
+    can see exactly why a past call was made.
   </p>
 
   @if (loading) {
@@ -37,7 +37,27 @@
               <p class="decision-notes"><strong>Notes:</strong> {{ record.decisionNotes }}</p>
             }
 
-            <p class="rationale">{{ record.rationale }}</p>
+            @if (record.wasOverridden) {
+              <p class="rationale-label">System's reasoning at the time (the decision above overrode this):</p>
+            } @else {
+              <p class="rationale-label">System's reasoning at the time:</p>
+            }
+            <p class="rationale" [innerHTML]="renderRationale(record.rationale)"></p>
+
+            <dl class="explanation">
+              <div class="explanation-row">
+                <dt>Why this level</dt>
+                <dd>{{ record.thresholdCrossed || notRecordedText }}</dd>
+              </div>
+              <div class="explanation-row">
+                <dt>How sure</dt>
+                <dd>{{ record.confidence || notRecordedText }}</dd>
+              </div>
+              <div class="explanation-row">
+                <dt>What to watch for</dt>
+                <dd>{{ record.whatWouldChange || notRecordedText }}</dd>
+              </div>
+            </dl>
 
             <h4>Inputs at the time of this decision</h4>
             <table>
@@ -89,5 +109,42 @@
         }
       </div>
     }
+  }
+</section>
+
+<section class="notification-log">
+  <h3>Notification Send Log ({{ notificationEntries.length }})</h3>
+  <p class="hint">
+    A separate audit trail from decision records above -- recording a decision and sending
+    notifications are two different actions, and may not happen at the same moment.
+  </p>
+
+  @if (notificationLogLoading) {
+    <p>Loading notification history…</p>
+  } @else if (notificationEntries.length === 0) {
+    <p class="muted">No notifications have been sent for this facility yet.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Sent</th>
+          <th>Recipient</th>
+          <th>Channel</th>
+          <th>Posture</th>
+          <th>Method</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of notificationEntries; track entry.notificationId) {
+          <tr>
+            <td>{{ entry.sentAt | date: 'medium' }}</td>
+            <td>{{ entry.employeeName }}{{ entry.essentialPersonnel ? ' (essential)' : '' }}</td>
+            <td>{{ entry.channel === 'sms' ? 'SMS' : 'Email' }}</td>
+            <td>{{ entry.postureLabel }}</td>
+            <td>{{ entry.sentViaBulkAction ? 'Notify All' : 'Individual' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
   }
 </section>

@@ -78,6 +78,44 @@
     margin: 0.3rem 0 0.6rem;
   }
 
+  .rationale-label {
+    font-size: 0.8rem;
+    color: #666;
+    margin: 0.6rem 0 0.15rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .rationale {
+    margin-top: 0;
+  }
+
+  .explanation {
+    margin: 0.5rem 0 0;
+    border-top: 1px solid #eee;
+    padding-top: 0.5rem;
+
+    .explanation-row {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.2rem 0;
+      font-size: 0.85rem;
+      align-items: baseline;
+
+      dt {
+        flex: 0 0 150px;
+        font-weight: 600;
+        color: #444;
+      }
+
+      dd {
+        margin: 0;
+        flex: 1;
+        color: #333;
+      }
+    }
+  }
+
   table {
     width: 100%;
     border-collapse: collapse;
@@ -102,5 +140,38 @@
     color: #999;
     margin-top: 0.75rem;
     font-family: monospace;
+  }
+}
+
+.notification-log {
+  margin-top: 1.5rem;
+
+  h3 {
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.25rem;
+  }
+
+  .hint {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0;
+  }
+
+  .muted {
+    color: #777;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+
+    th,
+    td {
+      text-align: left;
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid #eee;
+    }
   }
 }

@@ -73,6 +73,14 @@ export interface DecisionRecord {
   recommendedScore: number | null;
   experimentalBlendedScore: number | null;
   rationale: string;
+  /** Deliverable #2's explicitly-named fields -- see
+   * evaluator/explain.ts. Persisted on the record (not just the live
+   * /evaluate response) so a reconstructed decision shows the full
+   * explanation that was available at the time, not just the
+   * rationale paragraph. */
+  thresholdCrossed: string;
+  confidence: string;
+  whatWouldChange: string;
   governmentSourceErrored: boolean;
   inputs: DecisionRecordInput[];
   excludedInputs: DecisionRecordInput[];
@@ -117,6 +125,9 @@ export function buildDecisionRecord(params: {
   recommendedScore: number | null;
   experimentalBlendedScore: number | null;
   rationale: string;
+  thresholdCrossed: string;
+  confidence: string;
+  whatWouldChange: string;
   governmentSourceErrored: boolean;
   scoredSources: SourceOutcome[];
   excludedSources: SourceOutcome[];
@@ -138,6 +149,9 @@ export function buildDecisionRecord(params: {
     recommendedScore: params.recommendedScore,
     experimentalBlendedScore: params.experimentalBlendedScore,
     rationale: params.rationale,
+    thresholdCrossed: params.thresholdCrossed,
+    confidence: params.confidence,
+    whatWouldChange: params.whatWouldChange,
     governmentSourceErrored: params.governmentSourceErrored,
     inputs: params.scoredSources.map(toDecisionRecordInput),
     excludedInputs: params.excludedSources.map(toDecisionRecordInput),

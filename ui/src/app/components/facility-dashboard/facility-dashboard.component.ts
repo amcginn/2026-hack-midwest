@@ -2,7 +2,14 @@ import { Component, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { FacilityEvaluation, FacilityRoster, Posture, SourceOutcome } from '../../models/facility.model';
+import {
+  FacilityEvaluation,
+  FacilityRoster,
+  Posture,
+  SourceOutcome,
+  NotificationRecipient,
+  NotificationChannel,
+} from '../../models/facility.model';
 import { DecisionLogComponent } from '../decision-log/decision-log.component';
 
 const POSTURE_CLASS: Record<Posture, string> = {
@@ -76,6 +83,33 @@ export class FacilityDashboardComponent implements OnChanges {
   recordingDecision = false;
   recordedConfirmation: string | null = null;
 
+  // Notification send state. See POST /notifications (server/src/index.ts) --
+  // a separate action/audit trail from decision records (per user,
+  // 2026-10-11: "I'd say audit as a separate log"). Nothing here is
+  // auto-triggered by viewing the dashboard -- only an explicit
+  // Notify/Notify All click persists anything, same explicit-action
+  // philosophy as the decision form.
+  recipientChannel: Record<string, NotificationChannel> = {};
+  notifyingEmployeeId: string | null = null;
+  notifiedConfirmationByEmployee: Record<string, string> = {};
+  notifyingAll = false;
+  notifyAllConfirmation: string | null = null;
+  /** "Skip confirmation" checkbox -- per user: "possibly have a check
+   * box to be the equivalent to clicking notify all anyway (still
+   * separate log, fewer clicks)." Does not skip logging, only skips
+   * the browser confirm() prompt before a bulk send. */
+  skipNotifyAllConfirm = false;
+  previewEmployeeId: string | null = null;
+
+  /** Whether the full Notify/Notify All panel is shown. Defaults
+   * collapsed when posture is "normal" (nothing warrants proactively
+   * notifying anyone -- see loadEvaluation below) but stays reachable
+   * with one click, since a facility manager may need to notify
+   * everyone for a reason outside the tracked data sources entirely
+   * (e.g. a power outage) -- the system's job is to surface what it
+   * knows, not to gate actions it didn't anticipate. */
+  notifyPanelExpanded = false;
+
   constructor(private api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -101,6 +135,25 @@ export class FacilityDashboardComponent implements OnChanges {
         // anything (see recordDecision below for the only action that
         // does).
         this.decidedPostureOverride = res.posture;
+
+        // Default each recipient's channel to email, except fall back
+        // to SMS being unavailable (disabled in the template) when
+        // there's no short-form message for the current posture (e.g.
+        // "normal" has no urgent short form to send).
+        this.recipientChannel = {};
+        for (const r of res.notification.recipients) {
+          this.recipientChannel[r.employeeId] = 'email';
+        }
+        this.notifiedConfirmationByEmployee = {};
+        this.notifyAllConfirmation = null;
+        this.previewEmployeeId = res.notification.recipients[0]?.employeeId ?? null;
+        // Auto-expand for any non-normal posture (there's something
+        // worth notifying about); auto-collapse back to the minimal
+        // summary for normal. Re-evaluated on every load, not just
+        // once, so switching facilities or re-evaluating always
+        // reflects the CURRENT posture's default, not a stale
+        // expand/collapse choice from a previous posture.
+        this.notifyPanelExpanded = res.posture !== 'normal';
       },
       error: (err) => {
         this.error = 'Could not load evaluation for this facility.';
@@ -159,6 +212,83 @@ export class FacilityDashboardComponent implements OnChanges {
     return this.decisionDate === toDateInputValue(new Date());
   }
 
+  /** Native <details> toggle event's target is a plain EventTarget,
+   * not typed with `open` -- cast through HTMLDetailsElement here so
+   * the template doesn't need an inline `as` cast. */
+  onNotifyExpandToggle(event: Event): void {
+    const details = event.target as HTMLDetailsElement;
+    this.notifyPanelExpanded = details.open;
+  }
+
+  notifyOne(recipient: NotificationRecipient): void {
+    if (!this.facilityId) return;
+    this.notifyingEmployeeId = recipient.employeeId;
+
+    const channel = this.recipientChannel[recipient.employeeId] ?? 'email';
+
+    this.api
+      .sendNotifications(this.facilityId, {
+        date: this.decisionDate || undefined,
+        employeeIds: [recipient.employeeId],
+        channel,
+      })
+      .subscribe({
+        next: () => {
+          this.notifyingEmployeeId = null;
+          this.notifiedConfirmationByEmployee[recipient.employeeId] =
+            `Notified ${recipient.name} via ${channel === 'sms' ? 'SMS' : 'email'} at ${new Date().toLocaleTimeString()}.`;
+          this.decisionLog?.loadNotificationLog();
+        },
+        error: (err) => {
+          this.notifyingEmployeeId = null;
+          console.error('Could not send notification', err);
+        },
+      });
+  }
+
+  notifyAll(): void {
+    if (!this.facilityId || !this.evaluation) return;
+
+    const count = this.evaluation.notification.recipientCount;
+    if (!this.skipNotifyAllConfirm) {
+      const confirmed = window.confirm(
+        `Notify all ${count} recipient${count === 1 ? '' : 's'} for ${this.evaluation.facilityName}?`,
+      );
+      if (!confirmed) return;
+    }
+
+    this.notifyingAll = true;
+    this.notifyAllConfirmation = null;
+
+    this.api
+      .sendNotifications(this.facilityId, {
+        date: this.decisionDate || undefined,
+        notifyAll: true,
+        channel: 'email',
+      })
+      .subscribe({
+        next: (res) => {
+          this.notifyingAll = false;
+          this.notifyAllConfirmation = `Notified ${res.count} recipient${res.count === 1 ? '' : 's'} via email at ${new Date().toLocaleTimeString()}.`;
+          this.decisionLog?.loadNotificationLog();
+        },
+        error: (err) => {
+          this.notifyingAll = false;
+          console.error('Could not send bulk notification', err);
+        },
+      });
+  }
+
+  /** Drafted message text for the copy/paste preview box -- per user
+   * (2026-10-11): "we may also have a text box with the email/template
+   * to copy/paste in case it needs to be sent to someone else too."
+   * Does not send or log anything; purely a read-only display. */
+  previewMessageText(): string {
+    if (!this.evaluation || !this.previewEmployeeId) return '';
+    const recipient = this.evaluation.notification.recipients.find((r) => r.employeeId === this.previewEmployeeId);
+    return recipient?.longFormMessage ?? '';
+  }
+
   loadRoster(): void {
     if (!this.facilityId) return;
     this.roster = null;
@@ -186,12 +316,69 @@ export class FacilityDashboardComponent implements OnChanges {
     return SEVERITY_ICON[this.sourceSeverityClass(source)];
   }
 
+  /**
+   * NWS sometimes issues the same warning as multiple zone-scoped CAP
+   * records (confirmed live, 2026-10-11 -- see server/src/sources/nws.ts
+   * collapseByHeadline). The server merges these into one source card
+   * with `affectedAreaGroups` holding the full per-zone area text, so
+   * the dashboard can show one clean card by default while still
+   * surfacing why/where it applies on demand instead of either hiding
+   * the detail entirely or repeating the same card 3 times.
+   */
+  /**
+   * One bullet per distinct area description. For a facility whose
+   * warning NWS reported as a single zone record, this is one entry
+   * (`areaDesc`). For a warning NWS fanned across multiple zone
+   * records with the same headline (merged server-side -- see
+   * server/src/sources/nws.ts collapseByHeadline), this is each
+   * record's area text. Always a plain visible list, not hidden
+   * behind a disclosure -- the text isn't long enough to justify
+   * hiding it, and a facility with only one area shouldn't need
+   * different UI from one with three (simplified from an earlier
+   * expand/collapse version, 2026-10-11).
+   */
+  affectedAreas(source: SourceOutcome): string[] {
+    const groups = source.detail?.['affectedAreaGroups'];
+    if (Array.isArray(groups) && groups.length > 0) {
+      return groups as string[];
+    }
+    const single = source.detail?.['areaDesc'];
+    return typeof single === 'string' && single.length > 0 ? [single] : [];
+  }
+
+  /** Typed accessor for a date-like string field inside the generic
+   * `detail` bag, so the `date` pipe (which needs string|number|Date,
+   * not `unknown`) can bind to it directly in the template. */
+  detailDate(source: SourceOutcome, key: string): string | null {
+    const value = source.detail?.[key];
+    return typeof value === 'string' ? value : null;
+  }
+
   todayStatusLabel(status: string): string {
     return TODAY_STATUS_LABELS[status] ?? status;
   }
 
   remoteStatusLabel(status: string): string {
     return REMOTE_STATUS_LABELS[status] ?? status;
+  }
+
+  /**
+   * Renders the server's `**posture label**` emphasis markers (see
+   * rationale/templates.ts) as real <strong> HTML, so the recommended
+   * posture visually stands out in the rationale paragraph instead of
+   * reading as plain, undifferentiated prose. The rationale text is
+   * server-templated (never raw user input), and any dynamic values
+   * interpolated into it (facility name, posture label) come from our
+   * own fixed data/enums -- not free-text user entry -- so innerHTML
+   * here isn't an XSS vector. HTML-escape first regardless, as a
+   * defensive habit rather than because a real injection path exists.
+   */
+  renderRationale(text: string): string {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   }
 }
 

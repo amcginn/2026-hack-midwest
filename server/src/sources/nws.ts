@@ -33,6 +33,27 @@ interface NwsAlertFeature {
     headline: string;
     areaDesc: string;
     effective: string;
+    /** When the hazard itself is expected to begin -- distinct from
+     * `effective` (when the ALERT record became effective, which can
+     * be well before the hazard actually starts). Not always present
+     * on every alert type. */
+    onset?: string;
+    /** When this specific alert record expires (may be superseded by
+     * an "Update"/"Extended" message before the hazard itself ends --
+     * see `ends` below for the hazard's actual expected end). */
+    expires?: string;
+    /** When the underlying hazard is expected to end, per NWS's own
+     * VTEC-derived field -- the more decision-relevant "how long will
+     * this last" answer than `expires`. Not always present. */
+    ends?: string;
+    /** The full WHAT/WHERE/WHEN/IMPACTS narrative -- real content NWS
+     * provides but we weren't capturing. Can be long (multiple
+     * paragraphs); shown collapsed/expandable in the UI, not inline. */
+    description?: string;
+    /** NWS's own "what the public should do" guidance -- directly
+     * relevant to the challenge's notification deliverable ("what
+     * they're supposed to do"). */
+    instruction?: string;
     "@id": string;
   };
 }
@@ -96,9 +117,76 @@ async function fetchActiveAlertsForZone(zoneId: string): Promise<NwsAlertFeature
 }
 
 /**
+ * NWS issues one CAP alert record per forecast zone grouping, even
+ * when the same warning (identical headline/severity/certainty/
+ * urgency/effective time) spans several such groupings. Confirmed
+ * live, 2026-10-11: a single Winter Storm Warning for Great Falls, MT
+ * came back as 3 separate /alerts/active features, each with the same
+ * headline but a different areaDesc zone list -- even though we only
+ * ever query the facility's OWN resolved zone (see module doc; this
+ * isn't a multi-zone query bug on our side, NWS's own feed fans one
+ * warning across multiple records for a single zone query).
+ *
+ * To a facility manager these are one warning, not three -- showing
+ * identical-looking cards 3x with no explanation reads as a bug.
+ * Collapse by headline, keep one scored outcome, and merge the area
+ * descriptions so the full NWS-reported coverage is still visible.
+ */
+function collapseByHeadline(outcomes: SourceOutcome[]): SourceOutcome[] {
+  const groups = new Map<string, SourceOutcome[]>();
+  const ungrouped: SourceOutcome[] = [];
+
+  for (const outcome of outcomes) {
+    const headline = outcome.detail?.["headline"];
+    if (typeof headline !== "string" || headline.length === 0) {
+      // No headline to group by (e.g. the insufficient_data
+      // "Unparseable alert" case) -- pass through unmerged.
+      ungrouped.push(outcome);
+      continue;
+    }
+    const existing = groups.get(headline);
+    if (existing) {
+      existing.push(outcome);
+    } else {
+      groups.set(headline, [outcome]);
+    }
+  }
+
+  const collapsed: SourceOutcome[] = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      collapsed.push(group[0]);
+      continue;
+    }
+    const primary = group[0];
+    const areaDescs = group
+      .map((o) => o.detail?.["areaDesc"])
+      .filter((a): a is string => typeof a === "string" && a.length > 0);
+
+    collapsed.push({
+      ...primary,
+      detail: {
+        ...primary.detail,
+        areaDesc: areaDescs[0],
+        // Full per-zone breakdown preserved for anyone who wants to
+        // see exactly which NWS zone groupings this warning spans --
+        // not shown by default, since zone granularity isn't
+        // decision-relevant to a facility manager, but not discarded
+        // either (reconstructability matters for the decision record
+        // too, not just the live dashboard).
+        affectedAreaGroups: areaDescs,
+        mergedRecordCount: group.length,
+      },
+    });
+  }
+
+  return [...collapsed, ...ungrouped];
+}
+
+/**
  * Fetch and score all active NWS alerts for a facility's lat/lon.
- * Returns one SourceOutcome per active alert (a facility can have
- * multiple simultaneous alerts).
+ * Returns one SourceOutcome per DISTINCT active warning (same
+ * headline collapsed into one record -- see collapseByHeadline above).
  */
 export async function evaluateNwsAlerts(lat: number, lon: number): Promise<SourceOutcome[]> {
   const zoneId = await resolveCountyZone(lat, lon);
@@ -144,6 +232,11 @@ export async function evaluateNwsAlerts(lat: number, lon: number): Promise<Sourc
         urgency: p.urgency,
         headline: p.headline,
         areaDesc: p.areaDesc,
+        onset: p.onset ?? null,
+        expires: p.expires ?? null,
+        ends: p.ends ?? null,
+        description: p.description ?? null,
+        instruction: p.instruction ?? null,
       },
       note: result.note,
       timestamp: p.effective ?? new Date().toISOString(),
@@ -151,5 +244,5 @@ export async function evaluateNwsAlerts(lat: number, lon: number): Promise<Sourc
     });
   }
 
-  return outcomes;
+  return collapseByHeadline(outcomes);
 }

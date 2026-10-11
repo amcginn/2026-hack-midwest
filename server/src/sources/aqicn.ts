@@ -8,6 +8,7 @@
 
 import { scoreAqi } from "../evaluator/aqicnScoring";
 import type { SourceOutcome } from "./types";
+import type { SupplementalAdapter } from "./supplementalAdapter";
 
 const AQICN_BASE = "https://api.waqi.info/feed";
 const REQUEST_TIMEOUT_MS = 8000;
@@ -24,21 +25,25 @@ interface AqicnResponse {
 
 // AQICN's geo-lookup returns the single nearest station with no
 // distance cutoff -- confirmed live: querying lat=0,lon=0 (middle of
-// the Gulf of Guinea) returned a real station in South Africa, ~2600km
+// the Gulf of Guinea) returned a real station in South Africa, ~1600mi
 // away, rather than "no station nearby." Reject matches farther than
 // this from the requested point rather than silently attributing a
 // distant station's air quality to our facility.
-const MAX_STATION_DISTANCE_KM = 100;
+//
+// Miles, not km -- USDA is a US agency with a US audience; the rest of
+// the system already uses US customary units (river gauge height is
+// in feet, not meters).
+const MAX_STATION_DISTANCE_MI = 62; // ~100km
 
-/** Haversine distance between two lat/lon points, in kilometers. */
-function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
+/** Haversine distance between two lat/lon points, in miles. */
+function distanceMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R_MI = 3958.8; // Earth radius in miles
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R_MI * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /**
@@ -99,16 +104,16 @@ export async function evaluateAqicn(lat: number, lon: number): Promise<SourceOut
 
   const stationGeo = data.data.city?.geo;
   if (Array.isArray(stationGeo) && stationGeo.length === 2) {
-    const distance = distanceKm(lat, lon, stationGeo[0], stationGeo[1]);
-    if (distance > MAX_STATION_DISTANCE_KM) {
+    const distance = distanceMiles(lat, lon, stationGeo[0], stationGeo[1]);
+    if (distance > MAX_STATION_DISTANCE_MI) {
       return {
         source: "AQICN",
         tier: "supplemental",
         signal: data.data.city?.name ?? "AQI",
         status: "absent",
         weight: 0.4,
-        detail: { nearestStationDistanceKm: Math.round(distance) },
-        note: `Nearest AQICN station is ${Math.round(distance)}km away -- too far to attribute to this facility.`,
+        detail: { nearestStationDistanceMi: Math.round(distance) },
+        note: `Nearest AQICN station is ${Math.round(distance)}mi away — too far to attribute to this facility.`,
         timestamp: new Date().toISOString(),
       };
     }
@@ -133,3 +138,17 @@ export async function evaluateAqicn(lat: number, lon: number): Promise<SourceOut
     timestamp: data.data.time?.iso ?? new Date().toISOString(),
   };
 }
+
+/**
+ * SupplementalAdapter wrapper -- applicable to every facility (only
+ * needs lat/lon, which every facility record has). See
+ * supplementalAdapter.ts module doc for why this interface exists.
+ */
+export const aqicnAdapter: SupplementalAdapter = {
+  name: "AQICN",
+  isApplicable: () => true,
+  evaluate: async (facility) => {
+    const outcome = await evaluateAqicn(facility.coordinates.lat, facility.coordinates.lon);
+    return [outcome];
+  },
+};

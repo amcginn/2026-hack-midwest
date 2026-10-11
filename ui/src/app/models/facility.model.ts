@@ -56,8 +56,30 @@ export type Posture =
 export interface NotificationRecipient {
   employeeId: string;
   name: string;
+  phone: string;
+  email: string;
   essentialPersonnel: boolean;
   reason: 'home_facility_normal' | 'in_office_today_exception';
+  longFormMessage: string;
+  shortFormMessage: string | null;
+}
+
+export type NotificationChannel = 'email' | 'sms';
+
+export interface NotificationLogEntry {
+  notificationId: string;
+  sentAt: string;
+  facilityId: string;
+  facilityName: string;
+  decisionRecordId: string | null;
+  posture: Posture;
+  postureLabel: string;
+  employeeId: string;
+  employeeName: string;
+  essentialPersonnel: boolean;
+  channel: NotificationChannel;
+  messageText: string;
+  sentViaBulkAction: boolean;
 }
 
 export interface SourceError {
@@ -108,6 +130,9 @@ export interface DecisionRecord {
   recommendedScore: number | null;
   experimentalBlendedScore: number | null;
   rationale: string;
+  thresholdCrossed: string;
+  confidence: string;
+  whatWouldChange: string;
   governmentSourceErrored: boolean;
   inputs: DecisionRecordInput[];
   excludedInputs: DecisionRecordInput[];
@@ -127,6 +152,9 @@ export interface FacilityEvaluation {
   recommendedScore: number | null;
   experimentalBlendedScore: number | null;
   rationale: string;
+  thresholdCrossed: string;
+  confidence: string;
+  whatWouldChange: string;
   sources: {
     government: SourceOutcome[];
     supplemental: SourceOutcome[];

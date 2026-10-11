@@ -29,5 +29,6 @@ ui/node_modules/
 ui/dist/
 ui/.angular/
 
-# Generated decision records (runtime audit trail, not source data)
+# Generated decision/notification records (runtime audit trail, not source data)
 data/decision-records/
+data/notification-log/

@@ -1219,12 +1219,37 @@ go stale like the deliverable fields did before this review caught it.
 ### Scope: the notification
 - [x] Right people — applicability rule (section 1), verified against
       synthetic data including the roster-vs-building-list distinction
-- [ ] **GAP**: Right channel — no channel routing exists at all (e.g.
-      essential personnel -> SMS+email, others -> email only). Named
-      explicitly in the challenge. Not started.
-- [ ] **GAP**: Drafted message content — we have the recipient list,
-      but no actual notification message text per recipient/posture.
-      Named explicitly as deliverable #3. Not started.
+- [x] **Closed 2026-10-11.** Right channel — per-recipient email/SMS
+      selector (`server/src/notification/templates.ts` builds both a
+      long-form/email and short-form/SMS variant; SMS is disabled in
+      the UI when there's no short-form variant, e.g. "normal"
+      posture). Channel choice is manual per recipient, not an
+      automatic essential->SMS rule -- see design note below for why.
+- [x] **Closed 2026-10-11.** Drafted message content --
+      `buildNotificationMessages()` produces both message lengths,
+      keyed by posture band + essential-personnel flag + driving
+      signal name. Facility name always stated once in the opening
+      line (per user: someone on detail elsewhere or working an
+      exception schedule needs to know WHICH facility's posture this
+      is about). Essential personnel get one single, identical,
+      clearly-separated line regardless of posture ("ESSENTIAL
+      PERSONNEL: This does not change your schedule or reporting
+      requirement.") -- not a posture-specific paragraph, since their
+      situation genuinely doesn't vary by posture band (several rounds
+      of user feedback converged on this: first draft had posture-
+      specific essential wording that was inconsistent across bands
+      and included unneeded repetition of the facility name/time
+      language that added nothing).
+
+**Design note on channel routing** (per user, 2026-10-11): the real
+urgency problem isn't "essential vs non-essential gets a different
+channel," it's TIMING relative to when someone would otherwise leave
+the house. Essential personnel come in regardless, so there's no time
+pressure on their message. Non-essential staff being told to stay home
+need that message to land fast -- that's the case needing a short-form/
+SMS variant, directly addressing the challenge's "before they've
+already left the house" framing. This is why short-form exists per
+POSTURE, not per essential-flag.
 
 ### Deliverable 1: Working system, live demo
 - [x] Confirmed repeatedly throughout the build against real live NWS/
@@ -1235,23 +1260,62 @@ go stale like the deliverable fields did before this review caught it.
 - [x] Every input with source and timestamp (visible per-source; UI
       now also shows a human-readable "last updated" per card,
       2026-10-11)
-- [ ] **GAP (regression)**: "Which threshold was crossed and by how
-      much" — was designed in section 5 (`thresholdCrossed` field) but
-      never implemented in the real `/evaluate` response. Lost during
-      the aggregation redesign (max-of-government-tier rewrite), not a
-      conscious cut.
-- [ ] **GAP (regression)**: Confidence — designed, not implemented. Same
-      cause as above.
-- [ ] **GAP (regression)**: "What would change the recommendation" —
-      designed (`whatWouldChange`), not implemented. Same cause.
+- [x] **Closed 2026-10-11.** "Which threshold was crossed and by how
+      much," confidence, and "what would change the recommendation" --
+      implemented in `server/src/evaluator/explain.ts`
+      (`buildExplanation`), derived from the same `drivingSource`/
+      `recommendedScore` that already powers the rationale paragraph
+      (no new scoring logic). Wired into both the live `/evaluate`
+      response and persisted on decision records (so reconstructed
+      history shows the full explanation, not just the rationale text).
+      UI: dashboard and decision-log both show these as "Why this
+      level" / "How sure" / "What to watch for" -- reworded from the
+      literal field names after a user flag that the original labels
+      ("Threshold crossed" / "Confidence" / "What would change this")
+      read as restating the challenge's deliverable bullet rather than
+      normal product copy. Old decision records persisted before this
+      field existed show "— not recorded for this decision" instead of
+      a blank line (verified live against a real pre-existing record).
 - [x] One-paragraph plain-language rationale — implemented, templated,
       verified live
 
 ### Deliverable 3: Notification package
 - [x] Recipient list with inclusion/exclusion logic (roster view +
       applicability reasons)
-- [ ] **GAP**: Drafted message (see above, same gap)
-- [ ] **GAP**: Channel routing (see above, same gap)
+- [x] **Closed 2026-10-11.** Drafted message -- see "Scope: the
+      notification" above
+- [x] **Closed 2026-10-11.** Channel routing -- see "Scope: the
+      notification" above
+- [x] **Closed 2026-10-11, bonus beyond the literal deliverable text.**
+      Actual send/audit mechanism: per-recipient "Notify" button + a
+      "Notify All" button (with a "skip confirmation" checkbox for
+      fewer clicks on repeat sends, still fully logged either way),
+      plus a read-only copy/paste preview textarea for the drafted
+      message ("in case it needs to be sent another way" -- per user).
+      Logged-only for now, no real email/SMS dispatch (per user:
+      "let's start out with just logged. if we have time, we can set
+      things up in our demo aws account" -- real dispatch via the demo
+      AWS account remains a stretch item). Persisted as its OWN
+      append-only JSONL log (`data/notification-log/notifications.jsonl`,
+      `server/src/repository/notificationLog.ts`), explicitly SEPARATE
+      from decision records per user: "I'd say audit as a separate
+      log" -- recording a decision and sending notifications are
+      different actions that may not happen at the same moment.
+      Each entry carries an optional `decisionRecordId` link but is
+      independently queryable (`GET /api/facilities/:id/notifications`).
+      UI: shown in a new "Notification Send Log" section below decision
+      history in `DecisionLogComponent`.
+      **UX refinement (same day)**: the full notify panel (buttons,
+      channel selectors, preview) is disproportionate for a routine
+      Normal Operations day where nothing needs to happen -- collapses
+      to a one-line summary ("Nothing currently warrants notifying
+      anyone") for `normal` posture, auto-expanding for any non-normal
+      posture. Collapsed state stays one click from the full panel via
+      a native `<details>` disclosure ("Notify anyway...") -- per user:
+      a facility manager might need to notify everyone for a reason
+      entirely outside the tracked data sources (e.g. a power outage),
+      and the system's job is to surface what it knows, not gate
+      actions it didn't anticipate.
 
 ### Deliverable 4: The decision record
 - [x] **Resolved 2026-10-11, redesigned same day.** Implemented in
@@ -1292,12 +1356,22 @@ go stale like the deliverable fields did before this review caught it.
 1. ~~Decision record persistence~~ — **done**, redesigned same day to
    be explicit-action-only (`POST /decisions`), not auto-persisted on
    every view
-2. **Restore `thresholdCrossed` / `confidence` / `whatWouldChange`** —
-   was designed, just needs re-implementing against the current
-   response shape. **Still next up, highest remaining priority.**
-3. Notification message + channel routing (deliverable #3's remaining
-   gap)
-4. Display `accessibilityNotes` (trivial, still not done)
+2. ~~Restore `thresholdCrossed` / `confidence` / `whatWouldChange`~~ —
+   **done**, see Deliverable 2 above
+3. ~~Notification message + channel routing~~ — **done**, see
+   Deliverable 3 above
+4. **Display `accessibilityNotes`** — trivial, still not done.
+   **Now the highest remaining priority** -- the only item left on
+   this list that's an explicit, named challenge requirement with zero
+   implementation. Everything below this is a stretch/nice-to-have,
+   not a gap against the challenge text.
+5. **New, not yet started**: supplemental-source refactor follow-on --
+   `usgsAdapter`/`aqicnAdapter` (`SupplementalAdapter` interface, added
+   2026-10-11) only cover the two sources already built. Iowa DOT road
+   conditions (confirmed scorable, see section 1) was documented as
+   "build if time allows" before the registry existed; now that adding
+   a source is a single adapter file, this is cheaper to pick up than
+   it was when first deprioritized.
 
 Also closed this round, found via user manual-testing/screenshot review
 (not originally on this list, but real fixes, not scope creep):
@@ -1309,6 +1383,34 @@ government data available" wasn't visually prominent -> new banner;
 decision form didn't clear on submit and didn't display decidedBy/
 notes -> both fixed; single-facility-per-state in the picker -> added
 Des Moines (IA) and Great Falls (MT).
+
+**Second round of closures (2026-10-11, later session)**: hardcoded
+3-source array in `runEvaluation` -> refactored to a
+`SupplementalAdapter` registry (NWS stays hardcoded per challenge's "the
+core source" framing; USGS/AQICN implement the interface) --
+`server/src/sources/supplementalAdapter.ts`; NWS zone-record duplication
+(same warning issued as multiple CAP records with identical
+severity/certainty/urgency but different `areaDesc`) -> collapsed by
+headline server-side (`collapseByHeadline` in `nws.ts`), merged area
+list always shown as a plain bullet list rather than hidden behind a
+disclosure (simplified after user feedback that an expand/collapse was
+unnecessary machinery for short text); captured and surfaced previously-
+discarded real NWS fields (`onset`, `ends`, `expires`, `description`,
+`instruction`) -- description/instruction shown via an expandable "Full
+NWS alert text" detail; AQICN station-distance check converted km ->
+miles (USDA/US audience, consistent with gauge height already being in
+feet); literal `--` double-hyphen -> real em dash and posture-label
+emphasis markers throughout rationale text; "no government sources"
+muted one-liner reworded so it reads as "checked, nothing active" not
+"missing/unchecked" (Des Moines screenshot flag); decision-form
+placement actually moved below the data sections (was proposed earlier
+but never executed -- caught when user re-flagged it); decision-log
+override display now shows a labeled "System's reasoning at the time"
+lead-in instead of the overridden rationale reading as unexplained
+leftover text; multiple instances of UI copy that mirrored the challenge
+brief's own sentence structure reworded to read as normal product
+copy, not a deliverable checklist being narrated (decision-log hint
+text, the three new explanation field labels).
 
 ### Confirmed behavior: evaluation is always against current-moment
 ### weather, regardless of requested schedule date (2026-10-11)

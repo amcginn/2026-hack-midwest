@@ -28,6 +28,23 @@ export function scoreToPosture(score: number): Posture {
   return "closure";
 }
 
+/**
+ * The numeric [lower, upper) bounds for each posture band, exposed
+ * separately from scoreToPosture so callers (see
+ * evaluator/explain.ts's thresholdCrossed) can cite the exact range a
+ * score fell into, not just the resulting label. `closure` has no
+ * upper bound (capped at 4 by the scoring formula itself, see
+ * evaluator/scoring.ts).
+ */
+export const POSTURE_BANDS: Record<Posture, { lower: number; upper: number | null }> = {
+  normal: { lower: 0, upper: 0.5 },
+  delay: { lower: 0.5, upper: 1.5 },
+  early_dismissal: { lower: 1.5, upper: 2.5 },
+  telework_unscheduled_leave: { lower: 2.5, upper: 3.5 },
+  closure: { lower: 3.5, upper: null },
+  unknown: { lower: 0, upper: null },
+};
+
 export const POSTURE_LABELS: Record<Posture, string> = {
   normal: "Normal Operations",
   delay: "Delayed Arrival",

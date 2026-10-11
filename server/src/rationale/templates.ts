@@ -26,11 +26,11 @@ export function buildRationale(
   governmentSourceErrored = false,
 ): string {
   if (governmentSourceErrored) {
-    return `The primary government hazard data source (NWS) could not be reached for ${facilityName}. Current conditions are UNKNOWN -- this is not a confirmed "all clear" and should not be treated as normal operations. Please verify conditions manually (e.g. weather.gov) before making a decision, and retry this system shortly.`;
+    return `The primary government hazard data source (NWS) could not be reached for ${facilityName}. Current conditions are **UNKNOWN** — this is not a confirmed "all clear" and should not be treated as normal operations. Please verify conditions manually (e.g. weather.gov) before making a decision, and retry this system shortly.`;
   }
 
   if (!drivingSource) {
-    return `No active government-source hazard alert is currently on record for ${facilityName}. Normal operations are recommended, but this reflects an absence of alert data rather than a confirmed "all clear" -- continue monitoring, and review supplemental data below.`;
+    return `No active government-source hazard alert is currently on record for ${facilityName}. **Normal Operations** are recommended, but this reflects an absence of alert data rather than a confirmed "all clear" — continue monitoring, and review supplemental data below.`;
   }
 
   const postureLabel = POSTURE_LABELS[posture];
@@ -42,7 +42,7 @@ export function buildRationale(
       : "";
 
   return (
-    `${facilityName} is recommended for ${postureLabel} based on ${driverDescription}. ` +
+    `${facilityName} is recommended for **${postureLabel}** based on ${driverDescription}. ` +
     `${drivingSource.note ?? ""}${supplementalText}`.trim()
   );
 }
