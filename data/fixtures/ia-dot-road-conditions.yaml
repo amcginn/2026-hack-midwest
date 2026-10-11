@@ -1,0 +1,114 @@
+objectIdFieldName: OBJECTID
+uniqueIdField:
+  name: OBJECTID
+  isSystemMaintained: true
+globalIdFieldName: ''
+geometryType: esriGeometryPolyline
+spatialReference:
+  wkid: 102100
+  latestWkid: 3857
+fields:
+- name: ROUTE
+  type: esriFieldTypeString
+  alias: Route ID
+  sqlType: sqlTypeOther
+  length: 50
+  domain: null
+  defaultValue: null
+- name: LONG_NAME
+  type: esriFieldTypeString
+  alias: Route Description
+  sqlType: sqlTypeOther
+  length: 254
+  domain: null
+  defaultValue: null
+- name: ROAD_CONDITION
+  type: esriFieldTypeString
+  alias: Road Condition
+  sqlType: sqlTypeOther
+  length: 20
+  domain: null
+  defaultValue: null
+- name: ROAD_CONDITION_CODE
+  type: esriFieldTypeSmallInteger
+  alias: Road Condition Code
+  sqlType: sqlTypeOther
+  domain: null
+  defaultValue: null
+- name: PH_PAVEMENT_CONDITION
+  type: esriFieldTypeString
+  alias: CARS Phrase Pavement Condition
+  sqlType: sqlTypeOther
+  length: 254
+  domain: null
+  defaultValue: null
+- name: PRIMARY_LATITTUDE
+  type: esriFieldTypeDouble
+  alias: Primary Latitude
+  sqlType: sqlTypeOther
+  domain: null
+  defaultValue: null
+- name: PRIMARY_LONGITUDE
+  type: esriFieldTypeDouble
+  alias: Primary Longitude
+  sqlType: sqlTypeOther
+  domain: null
+  defaultValue: null
+- name: CARS_MSG_UPDATE_DATE
+  type: esriFieldTypeDate
+  alias: CARS Message Update Date (UTC)
+  sqlType: sqlTypeOther
+  length: 8
+  domain: null
+  defaultValue: null
+exceededTransferLimit: true
+features:
+- attributes:
+    ROUTE: '1'
+    LONG_NAME: 'I-129, between I-129 - Nebraska; the Nebraska State Line and Exit
+      1A: I-29; US 20 (near Sioux City)'
+    ROAD_CONDITION: Seasonal
+    ROAD_CONDITION_CODE: 10
+    PH_PAVEMENT_CONDITION: null
+    PRIMARY_LATITTUDE: 42.446896
+    PRIMARY_LONGITUDE: -96.38091
+    CARS_MSG_UPDATE_DATE: 1776225613000
+- attributes:
+    ROUTE: '2'
+    LONG_NAME: 'I-235, between Exit 122: I-80 (West Des Moines) and Exit 4: IA 28;
+      63rd Street (Windsor Heights)'
+    ROAD_CONDITION: Seasonal
+    ROAD_CONDITION_CODE: 10
+    PH_PAVEMENT_CONDITION: null
+    PRIMARY_LATITTUDE: 41.592075
+    PRIMARY_LONGITUDE: -93.78604
+    CARS_MSG_UPDATE_DATE: 1776225613000
+- attributes:
+    ROUTE: '2'
+    LONG_NAME: 'I-235, between Exit 4: IA 28; 63rd Street (Windsor Heights) and Martin
+      Luther King Junior Parkway (Des Moines)'
+    ROAD_CONDITION: Seasonal
+    ROAD_CONDITION_CODE: 10
+    PH_PAVEMENT_CONDITION: null
+    PRIMARY_LATITTUDE: 41.59302
+    PRIMARY_LONGITUDE: -93.70355
+    CARS_MSG_UPDATE_DATE: 1776225613000
+- attributes:
+    ROUTE: '2'
+    LONG_NAME: I-235, between Martin Luther King Junior Parkway and 3rd Street (Des
+      Moines)
+    ROAD_CONDITION: Seasonal
+    ROAD_CONDITION_CODE: 10
+    PH_PAVEMENT_CONDITION: null
+    PRIMARY_LATITTUDE: 41.595768
+    PRIMARY_LONGITUDE: -93.64403
+    CARS_MSG_UPDATE_DATE: 1776225613000
+- attributes:
+    ROUTE: '2'
+    LONG_NAME: I-235, between 3rd Street and US 69; East 15th Street (Des Moines)
+    ROAD_CONDITION: Seasonal
+    ROAD_CONDITION_CODE: 10
+    PH_PAVEMENT_CONDITION: null
+    PRIMARY_LATITTUDE: 41.595684
+    PRIMARY_LONGITUDE: -93.62247
+    CARS_MSG_UPDATE_DATE: 1776225613000

@@ -1,0 +1,68 @@
+# Synthetic facility records — authored, not from any live API.
+# Schema documented in docs/project-scope.md section 1.
+# lat/lon authored directly (as if a geocoder ran once at registration).
+
+facilities:
+  - facilityId: USDA-FSA-IA-CLINTON
+    name: USDA FSA Clinton County Office
+    address:
+      line1: 123 Example St
+      city: Clinton
+      state: IA
+      zip: "52732"
+    coordinates:
+      lat: 41.8847
+      lon: -90.1943
+    hours: "08:00-16:30"
+    buildingType: office
+    accessibilityNotes: ground-floor ADA accessible
+    notes: >
+      Primary/lead demo facility (finalized 2026-10-11). NWS Flood
+      Warning scenario, confirmed live and stable across repeated
+      re-checks. Also where USGS gauge, AQICN, and Iowa DOT road-condition
+      supplementary signals are demoed (hyper-local, same county/state).
+
+  - facilityId: USDA-FS-MT-BILLINGS
+    name: USDA Forest Service Billings Field Office
+    address:
+      line1: 456 Example Ave
+      city: Billings
+      state: MT
+      zip: "59101"
+    coordinates:
+      lat: 45.7833
+      lon: -108.5007
+    hours: "08:00-16:30"
+    buildingType: office
+    accessibilityNotes: ground-floor ADA accessible
+    notes: >
+      Secondary demo facility. NWS Winter Storm Warning scenario — proves
+      the evaluator generalizes across event types. Re-verify live
+      closer to demo time; conditions shift (confirmed firsthand via the
+      SC tornado and GA/NC tornado->flood shifts observed during scoping).
+
+  - facilityId: USDA-FS-AL-STATION
+    name: USDA Forest Service Alabama Research Station
+    address:
+      line1: 321 Example Pkwy
+      city: Montgomery
+      state: AL
+      zip: "36101"
+    coordinates:
+      lat: 32.3792
+      lon: -86.3077
+    hours: "08:00-16:30"
+    buildingType: research_station
+    accessibilityNotes: ground-floor ADA accessible
+    notes: >
+      Stretch-only demo facility. NHC Post-Tropical Cyclone Isaias
+      scenario — the only facility that would exercise the NHC evaluator.
+      Not required for the core build; USGS/AQICN/IA-DOT on the Clinton
+      facility already satisfies the "supplementary signal" deliverable.
+
+# Note: an earlier SC facility (Aiken County) was removed from this file.
+# It was built around a live Tornado Warning that has since cleared.
+# GA/NC flood activity observed in that region during scoping is handled
+# as a narrative-only mention (see docs/project-scope.md section 1), not
+# a built facility — not worth a fourth facility+evaluator pairing given
+# remaining time.

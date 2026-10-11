@@ -1,0 +1,19 @@
+# Daily schedule exceptions — only employees who deviate from their normal
+# homeFacilityId/remoteStatus for a given date are listed here. Anyone
+# with no entry for a given date is assumed to follow their normal
+# pattern (see employees.yaml).
+#
+# status enum: on_detail | telework | leave | in_office_today
+
+schedules:
+  - date: "2026-10-11"
+    facilityId: USDA-FSA-IA-CLINTON
+    entries:
+      - employeeId: E1003
+        status: on_detail
+        locationNote: "Billings, MT field office this week"
+      - employeeId: E1004
+        status: telework
+      - employeeId: E1006
+        status: in_office_today
+        locationNote: "normally full_remote, in-office for quarterly review"

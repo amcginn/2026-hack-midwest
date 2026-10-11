@@ -1,0 +1,47 @@
+status: ok
+data:
+  aqi: 45
+  idx: 6917
+  attributions:
+  - url: http://www.shl.uiowa.edu/env/ambient/index.xml
+    name: Iowa Department of Natural Resources - Regulatory Air
+    logo: US-Iowa-DNR.png
+  - url: http://www.airnow.gov/
+    name: Air Now - US EPA
+  - url: https://waqi.info/
+    name: World Air Quality Index Project
+  city:
+    geo:
+    - 41.875
+    - -90.177498
+    name: Rainbow Park, Clinton, Iowa, USA
+    url: https://aqicn.org/city/usa/iowa/clinton/rainbow-park
+    location: ''
+  dominentpol: pm25
+  iaqi:
+    dew:
+      v: 12
+    h:
+      v: 49
+    o3:
+      v: 40.8
+    p:
+      v: 1015.2
+    pm25:
+      v: 45
+    so2:
+      v: 1.6
+    t:
+      v: 23
+    w:
+      v: 5.1
+    wg:
+      v: 8.2
+  time:
+    s: '2026-10-10 16:00:00'
+    tz: -06:00
+    v: 1791648000
+    iso: '2026-10-10T16:00:00-06:00'
+  forecast: {}
+  debug:
+    sync: '2026-10-11T09:20:48+09:00'

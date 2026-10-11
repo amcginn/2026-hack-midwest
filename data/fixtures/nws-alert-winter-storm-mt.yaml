@@ -1,0 +1,851 @@
+'@context':
+- https://geojson.org/geojson-ld/geojson-context.jsonld
+- '@version': '1.1'
+  wx: https://api.weather.gov/ontology#
+  '@vocab': https://api.weather.gov/ontology#
+type: FeatureCollection
+features:
+- id: https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.001.1
+  type: Feature
+  geometry: null
+  properties:
+    '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.001.1
+    '@type': wx:Alert
+    id: urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.001.1
+    areaDesc: Eastern Pondera and Eastern Teton; Cascade County below 5000ft; Judith
+      Basin County and Judith Gap; Meagher County Valleys
+    geocode:
+      SAME:
+      - '030073'
+      - 030099
+      - '030013'
+      - '030045'
+      - '030027'
+      - 030059
+      UGC:
+      - MTZ309
+      - MTZ312
+      - MTZ313
+      - MTZ321
+    affectedZones:
+    - https://api.weather.gov/zones/forecast/MTZ309
+    - https://api.weather.gov/zones/forecast/MTZ312
+    - https://api.weather.gov/zones/forecast/MTZ313
+    - https://api.weather.gov/zones/forecast/MTZ321
+    references:
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5c27555301c61c960e80ee52001e9dfdf3528c34.002.1
+      identifier: urn:oid:2.49.0.1.840.0.5c27555301c61c960e80ee52001e9dfdf3528c34.002.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T00:32:00-06:00'
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.003.1
+      identifier: urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.003.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T10:56:00-06:00'
+    sent: '2026-10-10T16:13:00-06:00'
+    effective: '2026-10-10T16:13:00-06:00'
+    onset: '2026-10-10T16:13:00-06:00'
+    expires: '2026-10-11T07:15:00-06:00'
+    ends: '2026-10-12T06:00:00-06:00'
+    status: Actual
+    messageType: Update
+    category: Met
+    severity: Severe
+    certainty: Likely
+    urgency: Expected
+    event: Winter Storm Warning
+    sender: w-nws.webmaster@noaa.gov
+    senderName: NWS Great Falls MT
+    headline: Winter Storm Warning issued October 10 at 4:13PM MDT until October 12
+      at 6:00AM MDT by NWS Great Falls MT
+    description: '* WHAT...Heavy, wet snow expected. Total snow accumulations between
+      7
+
+      and 14 inches. Winds gusting as high as 35 mph.
+
+
+      * WHERE...Meagher County Valleys, Cascade County below 5000ft,
+
+      Eastern Pondera and Eastern Teton, and Judith Basin County and
+
+      Judith Gap.
+
+
+      * WHEN...Until 6 AM MDT Monday.
+
+
+      * IMPACTS...Travel could be very difficult. Gusty winds combined with
+
+      the wet and heavy nature of the snow could bring down tree
+
+      branches. Isolated power outages are possible.
+
+
+      * ADDITIONAL DETAILS...Snowfall amounts will vary drastically from
+
+      grassy surfaces to roadways, most notably at lower elevations, with
+
+      accumulations on non-grassy surfaces being confined mainly to
+
+      between the evening through late morning hours.'
+    instruction: 'If you must travel, keep an extra flashlight, food, and water in
+      your
+
+      vehicle in case of an emergency. The latest road conditions for the
+
+      state you are calling from can be obtained by calling 5 1 1.'
+    response: Prepare
+    note: null
+    parameters:
+      AWIPSidentifier:
+      - WSWTFX
+      WMOidentifier:
+      - WWUS45 KTFX 102213
+      NWSheadline:
+      - WINTER STORM WARNING NOW IN EFFECT UNTIL 6 AM MDT MONDAY
+      BLOCKCHANNEL:
+      - EAS
+      - NWEM
+      - CMAS
+      EAS-ORG:
+      - WXR
+      VTEC:
+      - /O.EXT.KTFX.WS.W.0008.261010T2213Z-261012T1200Z/
+      eventEndingTime:
+      - '2026-10-12T06:00:00-06:00'
+      expiredReferences:
+      - w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.63d055c6b8522eab4f914c4a776454fb26ce1d04.005.1,2026-10-09T11:29:00-06:00
+        w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.63d055c6b8522eab4f914c4a776454fb26ce1d04.002.2,2026-10-09T11:29:00-06:00
+    scope: Public
+    code: IPAWSv1.0
+    language: en-US
+    web: http://www.weather.gov
+    eventCode:
+      SAME:
+      - WSW
+      NationalWeatherService:
+      - WSW
+- id: https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.004.1
+  type: Feature
+  geometry: null
+  properties:
+    '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.004.1
+    '@type': wx:Alert
+    id: urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.004.1
+    areaDesc: East Glacier Park Region; Northern High Plains; Southern Rocky Mountain
+      Front; Southern High Plains; Upper Blackfoot and MacDonald Pass; Gates of the
+      Mountains
+    geocode:
+      SAME:
+      - '030035'
+      - '030073'
+      - 030049
+      - 030099
+      - '030013'
+      UGC:
+      - MTZ301
+      - MTZ302
+      - MTZ307
+      - MTZ308
+      - MTZ315
+      - MTZ316
+    affectedZones:
+    - https://api.weather.gov/zones/forecast/MTZ301
+    - https://api.weather.gov/zones/forecast/MTZ302
+    - https://api.weather.gov/zones/forecast/MTZ307
+    - https://api.weather.gov/zones/forecast/MTZ308
+    - https://api.weather.gov/zones/forecast/MTZ315
+    - https://api.weather.gov/zones/forecast/MTZ316
+    references:
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5c27555301c61c960e80ee52001e9dfdf3528c34.001.1
+      identifier: urn:oid:2.49.0.1.840.0.5c27555301c61c960e80ee52001e9dfdf3528c34.001.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T00:32:00-06:00'
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.001.2
+      identifier: urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.001.2
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T10:56:00-06:00'
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.002.1
+      identifier: urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.002.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T10:56:00-06:00'
+    sent: '2026-10-10T16:13:00-06:00'
+    effective: '2026-10-10T16:13:00-06:00'
+    onset: '2026-10-10T16:13:00-06:00'
+    expires: '2026-10-11T07:15:00-06:00'
+    ends: '2026-10-12T06:00:00-06:00'
+    status: Actual
+    messageType: Update
+    category: Met
+    severity: Severe
+    certainty: Likely
+    urgency: Expected
+    event: Winter Storm Warning
+    sender: w-nws.webmaster@noaa.gov
+    senderName: NWS Great Falls MT
+    headline: Winter Storm Warning issued October 10 at 4:13PM MDT until October 12
+      at 6:00AM MDT by NWS Great Falls MT
+    description: '* WHAT...Heavy, wet snow expected. Total snow accumulations between
+
+      10 and 20 inches, with the exception of the Lincoln valley where up
+
+      to 7 inches is expected. Isolated amounts approaching 30 inches
+
+      within the Bob Marshall Wilderness. Winds gusting as high as 45
+
+      mph.
+
+
+      * WHERE...Portions of central and north central Montana.
+
+
+      * WHEN...Until 6 AM MDT Monday.
+
+
+      * IMPACTS...Travel could be very difficult. Gusty winds combined with
+
+      the wet and heavy nature of the snow could bring down tree
+
+      branches. Isolated power outages are possible.
+
+
+      * ADDITIONAL DETAILS...Snowfall amounts will vary drastically from
+
+      grassy surfaces to roadways, most notably at lower elevations, with
+
+      accumulations on non-grassy surfaces being confined mainly to
+
+      between the evening through late morning hours.'
+    instruction: 'If you must travel, keep an extra flashlight, food, and water in
+      your
+
+      vehicle in case of an emergency. The latest road conditions for the
+
+      state you are calling from can be obtained by calling 5 1 1.'
+    response: Prepare
+    note: null
+    parameters:
+      AWIPSidentifier:
+      - WSWTFX
+      WMOidentifier:
+      - WWUS45 KTFX 102213
+      NWSheadline:
+      - WINTER STORM WARNING REMAINS IN EFFECT UNTIL 6 AM MDT MONDAY
+      BLOCKCHANNEL:
+      - EAS
+      - NWEM
+      - CMAS
+      EAS-ORG:
+      - WXR
+      VTEC:
+      - /O.CON.KTFX.WS.W.0008.000000T0000Z-261012T1200Z/
+      eventEndingTime:
+      - '2026-10-12T06:00:00-06:00'
+      expiredReferences:
+      - w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.63d055c6b8522eab4f914c4a776454fb26ce1d04.001.2,2026-10-09T11:29:00-06:00
+    scope: Public
+    code: IPAWSv1.0
+    language: en-US
+    web: http://www.weather.gov
+    eventCode:
+      SAME:
+      - WSW
+      NationalWeatherService:
+      - WSW
+- id: https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.003.1
+  type: Feature
+  geometry: null
+  properties:
+    '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.003.1
+    '@type': wx:Alert
+    id: urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.003.1
+    areaDesc: Big Belt, Bridger and Castle Mountains
+    geocode:
+      SAME:
+      - 030049
+      - '030007'
+      - '030031'
+      - 030059
+      UGC:
+      - MTZ320
+    affectedZones:
+    - https://api.weather.gov/zones/forecast/MTZ320
+    references:
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5c27555301c61c960e80ee52001e9dfdf3528c34.004.1
+      identifier: urn:oid:2.49.0.1.840.0.5c27555301c61c960e80ee52001e9dfdf3528c34.004.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T00:32:00-06:00'
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.005.1
+      identifier: urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.005.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T10:56:00-06:00'
+    sent: '2026-10-10T16:13:00-06:00'
+    effective: '2026-10-10T16:13:00-06:00'
+    onset: '2026-10-10T16:13:00-06:00'
+    expires: '2026-10-11T07:15:00-06:00'
+    ends: '2026-10-12T06:00:00-06:00'
+    status: Actual
+    messageType: Update
+    category: Met
+    severity: Severe
+    certainty: Likely
+    urgency: Expected
+    event: Winter Storm Warning
+    sender: w-nws.webmaster@noaa.gov
+    senderName: NWS Great Falls MT
+    headline: Winter Storm Warning issued October 10 at 4:13PM MDT until October 12
+      at 6:00AM MDT by NWS Great Falls MT
+    description: '* WHAT...Heavy, wet snow expected. Total snow accumulations between
+      6
+
+      and 14 inches. Winds gusting as high as 40 mph.
+
+
+      * WHERE...Big Belt, Bridger and Castle Mountains.
+
+
+      * WHEN...Until 6 AM MDT Monday.
+
+
+      * IMPACTS...Travel could be very difficult. Gusty winds combined with
+
+      the wet and heavy nature of the snow could bring down tree
+
+      branches. Isolated power outages are possible.
+
+
+      * ADDITIONAL DETAILS...Snowfall amounts will vary drastically from
+
+      grassy surfaces to roadways, most notably at lower elevations, with
+
+      accumulations on non-grassy surfaces being confined mainly to
+
+      between the evening through late morning hours.'
+    instruction: 'If you must travel, keep an extra flashlight, food, and water in
+      your
+
+      vehicle in case of an emergency. The latest road conditions for the
+
+      state you are calling from can be obtained by calling 5 1 1.'
+    response: Prepare
+    note: null
+    parameters:
+      AWIPSidentifier:
+      - WSWTFX
+      WMOidentifier:
+      - WWUS45 KTFX 102213
+      NWSheadline:
+      - WINTER STORM WARNING NOW IN EFFECT UNTIL 6 AM MDT MONDAY
+      BLOCKCHANNEL:
+      - EAS
+      - NWEM
+      - CMAS
+      EAS-ORG:
+      - WXR
+      VTEC:
+      - /O.EXT.KTFX.WS.W.0008.261010T2213Z-261012T1200Z/
+      eventEndingTime:
+      - '2026-10-12T06:00:00-06:00'
+      expiredReferences:
+      - w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.63d055c6b8522eab4f914c4a776454fb26ce1d04.004.2,2026-10-09T11:29:00-06:00
+    scope: Public
+    code: IPAWSv1.0
+    language: en-US
+    web: http://www.weather.gov
+    eventCode:
+      SAME:
+      - WSW
+      NationalWeatherService:
+      - WSW
+- id: https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.002.1
+  type: Feature
+  geometry: null
+  properties:
+    '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.002.1
+    '@type': wx:Alert
+    id: urn:oid:2.49.0.1.840.0.e3247f4b382a0c83c88dbd6ac1ed768dc1c2f4fa.002.1
+    areaDesc: Little Belt and Highwood Mountains; Snowy and Judith Mountains; Elkhorn
+      and Boulder Mountains
+    geocode:
+      SAME:
+      - '030013'
+      - 030059
+      - '030045'
+      - '030015'
+      - '030027'
+      - '030043'
+      - '030007'
+      UGC:
+      - MTZ317
+      - MTZ318
+      - MTZ322
+    affectedZones:
+    - https://api.weather.gov/zones/forecast/MTZ317
+    - https://api.weather.gov/zones/forecast/MTZ318
+    - https://api.weather.gov/zones/forecast/MTZ322
+    references:
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5c27555301c61c960e80ee52001e9dfdf3528c34.003.1
+      identifier: urn:oid:2.49.0.1.840.0.5c27555301c61c960e80ee52001e9dfdf3528c34.003.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T00:32:00-06:00'
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.004.1
+      identifier: urn:oid:2.49.0.1.840.0.788ba8280995d2bd49591e4662266b21df9055f3.004.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T10:56:00-06:00'
+    sent: '2026-10-10T16:13:00-06:00'
+    effective: '2026-10-10T16:13:00-06:00'
+    onset: '2026-10-10T16:13:00-06:00'
+    expires: '2026-10-11T07:15:00-06:00'
+    ends: '2026-10-12T06:00:00-06:00'
+    status: Actual
+    messageType: Update
+    category: Met
+    severity: Severe
+    certainty: Likely
+    urgency: Expected
+    event: Winter Storm Warning
+    sender: w-nws.webmaster@noaa.gov
+    senderName: NWS Great Falls MT
+    headline: Winter Storm Warning issued October 10 at 4:13PM MDT until October 12
+      at 6:00AM MDT by NWS Great Falls MT
+    description: '* WHAT...Heavy, wet snow expected. Total snow accumulations between
+      6
+
+      and 12 inches. Highest snowfall amounts in the northern slopes
+
+      between 4500 feet and 6500 feet. Winds gusting as high as 45 mph.
+
+
+      * WHERE...Elkhorn and Boulder Mountains, Little Belt and Highwood
+
+      Mountains, and Snowy and Judith Mountains.
+
+
+      * WHEN...Until 6 AM MDT Monday.
+
+
+      * IMPACTS...Travel could be very difficult. Gusty winds combined with
+
+      the wet and heavy nature of the snow could bring down tree
+
+      branches. Isolated power outages are possible.
+
+
+      * ADDITIONAL DETAILS...Snowfall amounts will vary drastically from
+
+      grassy surfaces to roadways, most notably at lower elevations, with
+
+      accumulations on non-grassy surfaces being confined mainly to
+
+      between the evening through late morning hours.'
+    instruction: 'If you must travel, keep an extra flashlight, food, and water in
+      your
+
+      vehicle in case of an emergency. The latest road conditions for the
+
+      state you are calling from can be obtained by calling 5 1 1.'
+    response: Prepare
+    note: null
+    parameters:
+      AWIPSidentifier:
+      - WSWTFX
+      WMOidentifier:
+      - WWUS45 KTFX 102213
+      NWSheadline:
+      - WINTER STORM WARNING NOW IN EFFECT UNTIL 6 AM MDT MONDAY
+      BLOCKCHANNEL:
+      - EAS
+      - NWEM
+      - CMAS
+      EAS-ORG:
+      - WXR
+      VTEC:
+      - /O.EXT.KTFX.WS.W.0008.261010T2213Z-261012T1200Z/
+      eventEndingTime:
+      - '2026-10-12T06:00:00-06:00'
+      expiredReferences:
+      - w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.63d055c6b8522eab4f914c4a776454fb26ce1d04.006.1,2026-10-09T11:29:00-06:00
+        w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.63d055c6b8522eab4f914c4a776454fb26ce1d04.003.2,2026-10-09T11:29:00-06:00
+    scope: Public
+    code: IPAWSv1.0
+    language: en-US
+    web: http://www.weather.gov
+    eventCode:
+      SAME:
+      - WSW
+      NationalWeatherService:
+      - WSW
+- id: https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.003.1
+  type: Feature
+  geometry: null
+  properties:
+    '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.003.1
+    '@type': wx:Alert
+    id: urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.003.1
+    areaDesc: Melville Foothills
+    geocode:
+      SAME:
+      - 030097
+      - '030107'
+      UGC:
+      - MTZ172
+    affectedZones:
+    - https://api.weather.gov/zones/forecast/MTZ172
+    references:
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.b3e1ad1bff5aba3a2c7ef1590a845cdfe215cd9f.002.1
+      identifier: urn:oid:2.49.0.1.840.0.b3e1ad1bff5aba3a2c7ef1590a845cdfe215cd9f.002.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-09T19:00:00-06:00'
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.19b4a1b818205db18b1654a6ac263851c884310b.002.1
+      identifier: urn:oid:2.49.0.1.840.0.19b4a1b818205db18b1654a6ac263851c884310b.002.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T00:53:00-06:00'
+    sent: '2026-10-10T13:38:00-06:00'
+    effective: '2026-10-10T13:38:00-06:00'
+    onset: '2026-10-11T00:00:00-06:00'
+    expires: '2026-10-11T13:45:00-06:00'
+    ends: '2026-10-12T12:00:00-06:00'
+    status: Actual
+    messageType: Update
+    category: Met
+    severity: Severe
+    certainty: Likely
+    urgency: Expected
+    event: Winter Storm Warning
+    sender: w-nws.webmaster@noaa.gov
+    senderName: NWS Billings MT
+    headline: Winter Storm Warning issued October 10 at 1:38PM MDT until October 12
+      at 12:00PM MDT by NWS Billings MT
+    description: '* WHAT...Periods of heavy wet snow and blowing snow expected. Total
+
+      snow accumulations between 5 and 10 inches. Winds gusting as high
+
+      as 35 mph.
+
+
+      * WHERE...Melville Foothills.
+
+
+      * WHEN...From midnight tonight to noon MDT Monday.
+
+
+      * IMPACTS...Travel could be very difficult on local roads and US-191
+
+      in the Melville vicinity. The hazardous conditions will impact the
+
+      Monday morning commute.
+
+
+      * ADDITIONAL DETAILS...Tree and power line damage is possible which
+
+      may result in power outages.'
+    instruction: 'If you must travel be prepared for severe winter conditions. Keep
+      an
+
+      extra flashlight, food, and water in your vehicle in case of an
+
+      emergency. For the latest road conditions, call 5 1 1.'
+    response: Prepare
+    note: null
+    parameters:
+      AWIPSidentifier:
+      - WSWBYZ
+      WMOidentifier:
+      - WWUS45 KBYZ 101938
+      NWSheadline:
+      - WINTER STORM WARNING REMAINS IN EFFECT FROM MIDNIGHT TONIGHT TO NOON MDT MONDAY
+      BLOCKCHANNEL:
+      - EAS
+      - NWEM
+      - CMAS
+      EAS-ORG:
+      - WXR
+      VTEC:
+      - /O.CON.KBYZ.WS.W.0010.261011T0600Z-261012T1800Z/
+      eventEndingTime:
+      - '2026-10-12T12:00:00-06:00'
+    scope: Public
+    code: IPAWSv1.0
+    language: en-US
+    web: http://www.weather.gov
+    eventCode:
+      SAME:
+      - WSW
+      NationalWeatherService:
+      - WSW
+- id: https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.001.2
+  type: Feature
+  geometry: null
+  properties:
+    '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.001.2
+    '@type': wx:Alert
+    id: urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.001.2
+    areaDesc: Judith Gap
+    geocode:
+      SAME:
+      - '030037'
+      - '030107'
+      UGC:
+      - MTZ063
+    affectedZones:
+    - https://api.weather.gov/zones/forecast/MTZ063
+    references: []
+    sent: '2026-10-10T13:38:00-06:00'
+    effective: '2026-10-10T13:38:00-06:00'
+    onset: '2026-10-10T18:00:00-06:00'
+    expires: '2026-10-11T13:45:00-06:00'
+    ends: '2026-10-12T12:00:00-06:00'
+    status: Actual
+    messageType: Alert
+    category: Met
+    severity: Severe
+    certainty: Likely
+    urgency: Expected
+    event: Winter Storm Warning
+    sender: w-nws.webmaster@noaa.gov
+    senderName: NWS Billings MT
+    headline: Winter Storm Warning issued October 10 at 1:38PM MDT until October 12
+      at 12:00PM MDT by NWS Billings MT
+    description: '* WHAT...Periods of heavy snow and blowing snow expected. Total
+      snow
+
+      accumulations between 4 and 8 inches with amounts near a foot in
+
+      the mountains. Winds gusting as high as 40 mph.
+
+
+      * WHERE...Judith Gap.
+
+
+      * WHEN...From 6 PM this evening to noon MDT Monday.
+
+
+      * IMPACTS...Travel could be very difficult, especially along US-191.
+
+      The hazardous conditions will impact the Monday morning commute.
+
+
+      * ADDITIONAL DETAILS...Tree and power line damage is possible which
+
+      may result in power outages.'
+    instruction: 'If you must travel, keep an extra flashlight, food, and water in
+      your
+
+      vehicle in case of an emergency. For the latest road conditions, call
+
+      5 1 1.'
+    response: Prepare
+    note: null
+    parameters:
+      AWIPSidentifier:
+      - WSWBYZ
+      WMOidentifier:
+      - WWUS45 KBYZ 101938
+      NWSheadline:
+      - WINTER STORM WARNING IN EFFECT FROM 6 PM THIS EVENING TO NOON MDT MONDAY
+      BLOCKCHANNEL:
+      - EAS
+      - NWEM
+      - CMAS
+      EAS-ORG:
+      - WXR
+      VTEC:
+      - /O.EXA.KBYZ.WS.W.0010.261011T0000Z-261012T1800Z/
+      eventEndingTime:
+      - '2026-10-12T12:00:00-06:00'
+    scope: Public
+    code: IPAWSv1.0
+    language: en-US
+    web: http://www.weather.gov
+    eventCode:
+      SAME:
+      - WSW
+      NationalWeatherService:
+      - WSW
+- id: https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.002.1
+  type: Feature
+  geometry: null
+  properties:
+    '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.002.1
+    '@type': wx:Alert
+    id: urn:oid:2.49.0.1.840.0.278ab925530cb24c25021d69d792f33b6df7d31f.002.1
+    areaDesc: Absaroka/Beartooth Mountains; Crazy Mountains
+    geocode:
+      SAME:
+      - 030009
+      - '030067'
+      - 030095
+      - 030097
+      - '030107'
+      UGC:
+      - MTZ067
+      - MTZ068
+    affectedZones:
+    - https://api.weather.gov/zones/forecast/MTZ067
+    - https://api.weather.gov/zones/forecast/MTZ068
+    references:
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.b3e1ad1bff5aba3a2c7ef1590a845cdfe215cd9f.001.2
+      identifier: urn:oid:2.49.0.1.840.0.b3e1ad1bff5aba3a2c7ef1590a845cdfe215cd9f.001.2
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-09T19:00:00-06:00'
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.19b4a1b818205db18b1654a6ac263851c884310b.001.1
+      identifier: urn:oid:2.49.0.1.840.0.19b4a1b818205db18b1654a6ac263851c884310b.001.1
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-10T00:53:00-06:00'
+    sent: '2026-10-10T13:38:00-06:00'
+    effective: '2026-10-10T13:38:00-06:00'
+    onset: '2026-10-10T18:00:00-06:00'
+    expires: '2026-10-11T13:45:00-06:00'
+    ends: '2026-10-12T12:00:00-06:00'
+    status: Actual
+    messageType: Update
+    category: Met
+    severity: Severe
+    certainty: Likely
+    urgency: Expected
+    event: Winter Storm Warning
+    sender: w-nws.webmaster@noaa.gov
+    senderName: NWS Billings MT
+    headline: Winter Storm Warning issued October 10 at 1:38PM MDT until October 12
+      at 12:00PM MDT by NWS Billings MT
+    description: '* WHAT...Heavy snow expected. Total snow accumulations between 10
+      and
+
+      18 inches. Winds gusting as high as 35 mph.
+
+
+      * WHERE...Absaroka/Beartooth Mountains and Crazy Mountains.
+
+
+      * WHEN...From 6 PM this evening to noon MDT Monday.
+
+
+      * IMPACTS...Recreation in the high country will be impacted by severe
+
+      winter conditions. Travel into Cooke City will be impacted.'
+    instruction: 'If you are heading to the high country this weekend plan for severe
+
+      winter conditions. Be sure to inform someone of your plans, in case
+
+      you have difficulties or become stranded in the winter conditions.'
+    response: Prepare
+    note: null
+    parameters:
+      AWIPSidentifier:
+      - WSWBYZ
+      WMOidentifier:
+      - WWUS45 KBYZ 101938
+      NWSheadline:
+      - WINTER STORM WARNING REMAINS IN EFFECT FROM 6 PM THIS EVENING TO NOON MDT
+        MONDAY
+      BLOCKCHANNEL:
+      - EAS
+      - NWEM
+      - CMAS
+      EAS-ORG:
+      - WXR
+      VTEC:
+      - /O.CON.KBYZ.WS.W.0010.261011T0000Z-261012T1800Z/
+      eventEndingTime:
+      - '2026-10-12T12:00:00-06:00'
+    scope: Public
+    code: IPAWSv1.0
+    language: en-US
+    web: http://www.weather.gov
+    eventCode:
+      SAME:
+      - WSW
+      NationalWeatherService:
+      - WSW
+- id: https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.96bfaee274496bee9210ddc9e51119ccdf2aee69.001.1
+  type: Feature
+  geometry: null
+  properties:
+    '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.96bfaee274496bee9210ddc9e51119ccdf2aee69.001.1
+    '@type': wx:Alert
+    id: urn:oid:2.49.0.1.840.0.96bfaee274496bee9210ddc9e51119ccdf2aee69.001.1
+    areaDesc: Butte/Blackfoot Region
+    geocode:
+      SAME:
+      - '030023'
+      - 030039
+      - '030077'
+      - 030093
+      UGC:
+      - MTZ007
+    affectedZones:
+    - https://api.weather.gov/zones/forecast/MTZ007
+    references:
+    - '@id': https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.24eeb7092633989c2672af077eeac3ee1998b664.001.2
+      identifier: urn:oid:2.49.0.1.840.0.24eeb7092633989c2672af077eeac3ee1998b664.001.2
+      sender: w-nws.webmaster@noaa.gov
+      sent: '2026-10-09T11:35:00-06:00'
+    sent: '2026-10-10T11:42:00-06:00'
+    effective: '2026-10-10T11:42:00-06:00'
+    onset: '2026-10-10T18:00:00-06:00'
+    expires: '2026-10-12T06:00:00-06:00'
+    ends: '2026-10-12T06:00:00-06:00'
+    status: Actual
+    messageType: Update
+    category: Met
+    severity: Severe
+    certainty: Likely
+    urgency: Expected
+    event: Winter Storm Warning
+    sender: w-nws.webmaster@noaa.gov
+    senderName: NWS Missoula MT
+    headline: Winter Storm Warning issued October 10 at 11:42AM MDT until October
+      12 at 6:00AM MDT by NWS Missoula MT
+    description: '* WHAT...Heavy snow expected. Total snow accumulations between 3
+      and
+
+      9 inches. Snow totals of 12-18 inches in the higher mountain areas.
+
+      Winds gusting as high as 45 mph.
+
+
+      * WHERE...MacDonald Pass, Homestake Pass, Highway 12 Garrison to
+
+      Elliston, Georgetown Lake, and Butte.
+
+
+      * WHEN...From 6 PM this evening to 6 AM MDT Monday.
+
+
+      * IMPACTS...Travel could be very difficult.'
+    instruction: 'If you must travel, keep an extra flashlight, food, and water in
+      your
+
+      vehicle in case of an emergency. The latest road conditions for the
+
+      state you are calling from can be obtained by calling 5 1 1.'
+    response: Prepare
+    note: null
+    parameters:
+      AWIPSidentifier:
+      - WSWMSO
+      WMOidentifier:
+      - WWUS45 KMSO 101742
+      NWSheadline:
+      - WINTER STORM WARNING REMAINS IN EFFECT FROM 6 PM THIS EVENING TO 6 AM MDT
+        MONDAY
+      BLOCKCHANNEL:
+      - EAS
+      - NWEM
+      - CMAS
+      EAS-ORG:
+      - WXR
+      VTEC:
+      - /O.CON.KMSO.WS.W.0005.261011T0000Z-261012T1200Z/
+      eventEndingTime:
+      - '2026-10-12T06:00:00-06:00'
+    scope: Public
+    code: IPAWSv1.0
+    language: en-US
+    web: http://www.weather.gov
+    eventCode:
+      SAME:
+      - WSW
+      NationalWeatherService:
+      - WSW
+title: Current Winter Storm Warning events
+updated: '2026-10-11T00:20:06+00:00'

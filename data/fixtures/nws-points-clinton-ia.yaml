@@ -1,0 +1,87 @@
+'@context':
+- https://geojson.org/geojson-ld/geojson-context.jsonld
+- '@version': '1.1'
+  wx: https://api.weather.gov/ontology#
+  s: https://schema.org/
+  geo: http://www.opengis.net/ont/geosparql#
+  unit: http://codes.wmo.int/common/unit/
+  '@vocab': https://api.weather.gov/ontology#
+  geometry:
+    '@id': s:GeoCoordinates
+    '@type': geo:wktLiteral
+  city: s:addressLocality
+  state: s:addressRegion
+  distance:
+    '@id': s:Distance
+    '@type': s:QuantitativeValue
+  bearing:
+    '@type': s:QuantitativeValue
+  value:
+    '@id': s:value
+  unitCode:
+    '@id': s:unitCode
+    '@type': '@id'
+  forecastOffice:
+    '@type': '@id'
+  forecastGridData:
+    '@type': '@id'
+  publicZone:
+    '@type': '@id'
+  county:
+    '@type': '@id'
+id: https://api.weather.gov/points/41.8847,-90.1943
+type: Feature
+geometry:
+  type: Point
+  coordinates:
+  - -90.1943
+  - 41.8847
+properties:
+  '@id': https://api.weather.gov/points/41.8847,-90.1943
+  '@type': wx:Point
+  cwa: DVN
+  type: land
+  forecastOffice: https://api.weather.gov/offices/DVN
+  gridId: DVN
+  gridX: 80
+  gridY: 83
+  forecast: https://api.weather.gov/gridpoints/DVN/80,83/forecast
+  forecastHourly: https://api.weather.gov/gridpoints/DVN/80,83/forecast/hourly
+  forecastGridData: https://api.weather.gov/gridpoints/DVN/80,83
+  observationStations: https://api.weather.gov/gridpoints/DVN/80,83/stations
+  relativeLocation:
+    type: Feature
+    geometry:
+      type: Point
+      coordinates:
+      - -90.2428158
+      - 41.8423652
+    properties:
+      city: Clinton
+      state: IA
+      distance:
+        unitCode: wmoUnit:m
+        value: 0
+      bearing:
+        unitCode: wmoUnit:degree_(angle)
+        value: 0
+  forecastZone: https://api.weather.gov/zones/forecast/IAZ066
+  county: https://api.weather.gov/zones/county/IAC045
+  fireWeatherZone: https://api.weather.gov/zones/fire/IAZ066
+  timeZone: America/Chicago
+  radarStation: KDVN
+  astronomicalData:
+    sunrise: '2026-10-10T07:07:48-05:00'
+    sunset: '2026-10-10T18:27:35-05:00'
+    transit: '2026-10-10T12:47:42-05:00'
+    civilTwilightBegin: '2026-10-10T06:39:58-05:00'
+    civilTwilightEnd: '2026-10-10T18:55:25-05:00'
+    nauticalTwilightBegin: '2026-10-10T06:07:43-05:00'
+    nauticalTwilightEnd: '2026-10-10T19:27:40-05:00'
+    astronomicalTwilightBegin: '2026-10-10T05:35:23-05:00'
+    astronomicalTwilightEnd: '2026-10-10T20:00:00-05:00'
+  nwr:
+    transmitter: KZZ83
+    sameCode: 019045
+    areaBroadcast: https://api.weather.gov/radio/KZZ83/broadcast
+    pointBroadcast: https://api.weather.gov/points/41.8847,-90.1943/radio

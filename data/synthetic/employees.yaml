@@ -1,0 +1,81 @@
+# Synthetic employee roster — authored, not from any live API.
+# Redesigned 2026-10-11 (see docs/project-scope.md section 1 decision log):
+# employee = stable identity/role facts. homeFacilityId + remoteStatus
+# describe the NORM. Day-specific exceptions live in schedule-entries.yaml,
+# not on the employee record — avoids an always-current field going stale
+# and supports both directions of exception (on_detail/telework AND a
+# normally-remote person being in-office on a specific day).
+
+employees:
+  - employeeId: E1001
+    name: Jordan Rivera
+    phone: "555-0100"
+    email: jordan.rivera@example.gov
+    role: Soil Conservationist
+    homeFacilityId: USDA-FSA-IA-CLINTON
+    remoteStatus: in_office
+    essentialPersonnel: false
+    teleworkEligible: true
+
+  - employeeId: E1002
+    name: Pat Nguyen
+    phone: "555-0101"
+    email: pat.nguyen@example.gov
+    role: Facility Manager
+    homeFacilityId: USDA-FSA-IA-CLINTON
+    remoteStatus: in_office
+    essentialPersonnel: true
+    teleworkEligible: false
+
+  - employeeId: E1003
+    name: Avery Collins
+    phone: "555-0102"
+    email: avery.collins@example.gov
+    role: Program Technician
+    homeFacilityId: USDA-FSA-IA-CLINTON
+    remoteStatus: in_office
+    essentialPersonnel: false
+    teleworkEligible: true
+    notes: >
+      Normally in-office at Clinton, IA. See schedule-entries.yaml for
+      2026-10-11: on detail in Billings, MT this week — not affected by
+      the Clinton facility's posture that day.
+
+  - employeeId: E1004
+    name: Morgan Lee
+    phone: "555-0103"
+    email: morgan.lee@example.gov
+    role: District Conservationist
+    homeFacilityId: USDA-FSA-IA-CLINTON
+    remoteStatus: hybrid
+    essentialPersonnel: false
+    teleworkEligible: true
+    notes: >
+      Hybrid worker. See schedule-entries.yaml for 2026-10-11: telework
+      that day — doesn't need a "stay home" notification, but still gets
+      awareness-level info.
+
+  - employeeId: E1005
+    name: Sam Okafor
+    phone: "555-0104"
+    email: sam.okafor@example.gov
+    role: Forestry Technician
+    homeFacilityId: USDA-FS-MT-BILLINGS
+    remoteStatus: in_office
+    essentialPersonnel: true
+    teleworkEligible: false
+
+  - employeeId: E1006
+    name: Taylor Brooks
+    phone: "555-0105"
+    email: taylor.brooks@example.gov
+    role: Program Analyst
+    homeFacilityId: USDA-FSA-IA-CLINTON
+    remoteStatus: full_remote
+    essentialPersonnel: false
+    teleworkEligible: true
+    notes: >
+      Normally full_remote — would NOT be affected by a Clinton facility
+      closure most days. See schedule-entries.yaml for 2026-10-11:
+      in_office_today (quarterly review) — the case the old data model
+      couldn't express. On this specific day, IS affected.
