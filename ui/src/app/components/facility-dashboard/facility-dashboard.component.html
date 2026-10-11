@@ -39,11 +39,13 @@
             <span class="severity-icon">{{ sourceSeverityIcon(source) }}</span>
             {{ source.source }} — {{ source.signal }}
           </div>
-          <div class="source-detail">
-            Severity: {{ source.detail['severity'] }} | Certainty: {{ source.detail['certainty'] }} |
-            Urgency: {{ source.detail['urgency'] }}
+          <div class="cap-badges">
+            <span class="cap-badge severity">Severity: {{ source.detail['severity'] }}</span>
+            <span class="cap-badge certainty">Certainty: {{ source.detail['certainty'] }}</span>
+            <span class="cap-badge urgency">Urgency: {{ source.detail['urgency'] }}</span>
           </div>
           <div class="source-note">{{ source.note }}</div>
+          <div class="source-timestamp">Last updated: {{ source.timestamp | date: 'medium' }}</div>
         </div>
       }
     </section>
@@ -60,6 +62,7 @@
             {{ source.source }} — {{ source.signal }}
           </div>
           <div class="source-note">{{ source.note }}</div>
+          <div class="source-timestamp">Last updated: {{ source.timestamp | date: 'medium' }}</div>
         </div>
       }
     </section>

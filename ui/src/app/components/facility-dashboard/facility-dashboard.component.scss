@@ -100,14 +100,46 @@ section {
     font-weight: 600;
   }
 
-  .source-detail {
-    font-size: 0.85rem;
-    color: #555;
+  .cap-badges {
+    display: flex;
+    gap: 0.4rem;
+    margin: 0.4rem 0;
+    flex-wrap: wrap;
+  }
+
+  // Severity/certainty/urgency are the explicit, named basis of the
+  // NWS CAP scoring formula (section 3) -- displayed as prominent
+  // badges rather than a muted caption line, since the challenge
+  // calls these three fields out by name.
+  .cap-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    color: #fff;
+
+    &.severity {
+      background: #b71c1c;
+    }
+    &.certainty {
+      background: #5e35b1;
+    }
+    &.urgency {
+      background: #00695c;
+    }
   }
 
   .source-note {
     font-size: 0.9rem;
     margin-top: 0.25rem;
+  }
+
+  .source-timestamp {
+    font-size: 0.78rem;
+    color: #888;
+    margin-top: 0.4rem;
   }
 
   .severity-icon {
