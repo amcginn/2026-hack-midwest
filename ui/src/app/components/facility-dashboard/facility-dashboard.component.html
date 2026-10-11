@@ -23,6 +23,50 @@
       </div>
     </header>
 
+    <section class="roster">
+      <h3>
+        Facility Roster &amp; Today's Schedule ({{ roster?.rosterCount ?? '…' }})
+      </h3>
+      <p class="hint">
+        Everyone normally based at this facility, and today's status — shows the distinction
+        the challenge calls out directly: the employee roster and who's actually affected
+        today are frequently not the same list.
+      </p>
+      @if (roster && roster.rosterCount === 0) {
+        <p class="muted">No employees are seeded for this facility in the demo dataset.</p>
+      } @else if (roster) {
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Normal Pattern</th>
+              <th>Today</th>
+              <th>Essential</th>
+              <th>Affected Today</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of roster.roster; track e.employeeId) {
+              <tr [class.row-applicable]="e.applicableToday" [class.row-excluded]="!e.applicableToday">
+                <td>{{ e.name }}</td>
+                <td>{{ e.role }}</td>
+                <td>{{ remoteStatusLabel(e.remoteStatus) }}</td>
+                <td>
+                  {{ todayStatusLabel(e.todayStatus) }}
+                  @if (e.scheduleNote) {
+                    <div class="schedule-note">{{ e.scheduleNote }}</div>
+                  }
+                </td>
+                <td>{{ e.essentialPersonnel ? 'Yes' : 'No' }}</td>
+                <td>{{ e.applicableToday ? '✓ Yes' : '— No' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+
     <section class="rationale">
       <h3>Rationale</h3>
       <p>{{ evaluation.rationale }}</p>
@@ -105,50 +149,6 @@
           }
         </tbody>
       </table>
-    </section>
-
-    <section class="roster">
-      <h3>
-        Full Facility Roster ({{ roster?.rosterCount ?? '…' }})
-      </h3>
-      <p class="hint">
-        Everyone normally based at this facility, and today's status — shows the distinction
-        the challenge calls out directly: the employee roster and who's actually affected
-        today are frequently not the same list.
-      </p>
-      @if (roster && roster.rosterCount === 0) {
-        <p class="muted">No employees are seeded for this facility in the demo dataset.</p>
-      } @else if (roster) {
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Normal Pattern</th>
-              <th>Today</th>
-              <th>Essential</th>
-              <th>Affected Today</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (e of roster.roster; track e.employeeId) {
-              <tr [class.row-applicable]="e.applicableToday" [class.row-excluded]="!e.applicableToday">
-                <td>{{ e.name }}</td>
-                <td>{{ e.role }}</td>
-                <td>{{ remoteStatusLabel(e.remoteStatus) }}</td>
-                <td>
-                  {{ todayStatusLabel(e.todayStatus) }}
-                  @if (e.scheduleNote) {
-                    <div class="schedule-note">{{ e.scheduleNote }}</div>
-                  }
-                </td>
-                <td>{{ e.essentialPersonnel ? 'Yes' : 'No' }}</td>
-                <td>{{ e.applicableToday ? '✓ Yes' : '— No' }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
     </section>
 
     <app-decision-log [facilityId]="facilityId"></app-decision-log>
