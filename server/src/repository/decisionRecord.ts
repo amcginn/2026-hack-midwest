@@ -53,14 +53,23 @@ export interface DecisionRecordNotificationRecipient {
 
 export interface DecisionRecord {
   recordId: string;
-  /** Our own clock -- when this evaluation was run. Distinct from each
-   * input's sourceReportedAt (see module doc). */
+  /** Our own clock -- when this DECISION was recorded (not when the
+   * underlying evaluation data was fetched -- see module doc). */
   evaluatedAt: string;
   facilityId: string;
   facilityName: string;
   requestedDate: string;
+  /** The posture actually DECIDED, which may differ from
+   * recommendedPosture if a human overrode it -- the challenge is
+   * explicit that "the goal is not to automate the decision," so an
+   * override is a first-class, expected case, not an edge case. */
   posture: Posture;
   postureLabel: string;
+  /** What the system recommended at evaluation time, for comparison
+   * against the posture actually decided (above). Null if there was
+   * no scored government source to recommend from. */
+  recommendedPosture: Posture | null;
+  wasOverridden: boolean;
   recommendedScore: number | null;
   experimentalBlendedScore: number | null;
   rationale: string;
@@ -69,6 +78,12 @@ export interface DecisionRecord {
   excludedInputs: DecisionRecordInput[];
   notificationRecipients: DecisionRecordNotificationRecipient[];
   sourceErrors: Array<{ source: string; error: string }>;
+  /** Who recorded this decision and any free-text notes -- "the goal
+   * is... that whatever they decide reaches the right people fast,"
+   * and reconstructability requires knowing a human was in the loop,
+   * not just the algorithm's output. */
+  decidedBy?: string;
+  decisionNotes?: string;
 }
 
 function ensureDir(): void {
@@ -94,7 +109,10 @@ export function buildDecisionRecord(params: {
   facilityId: string;
   facilityName: string;
   requestedDate: string;
-  posture: Posture;
+  /** The posture actually decided -- defaults to recommendedPosture
+   * when the caller doesn't override (see POST /decisions route). */
+  decidedPosture: Posture;
+  recommendedPosture: Posture | null;
   postureLabel: string;
   recommendedScore: number | null;
   experimentalBlendedScore: number | null;
@@ -104,6 +122,8 @@ export function buildDecisionRecord(params: {
   excludedSources: SourceOutcome[];
   notificationRecipients: DecisionRecordNotificationRecipient[];
   sourceErrors: Array<{ source: string; error: string }>;
+  decidedBy?: string;
+  decisionNotes?: string;
 }): DecisionRecord {
   return {
     recordId: randomUUID(),
@@ -111,8 +131,10 @@ export function buildDecisionRecord(params: {
     facilityId: params.facilityId,
     facilityName: params.facilityName,
     requestedDate: params.requestedDate,
-    posture: params.posture,
+    posture: params.decidedPosture,
     postureLabel: params.postureLabel,
+    recommendedPosture: params.recommendedPosture,
+    wasOverridden: params.recommendedPosture !== null && params.decidedPosture !== params.recommendedPosture,
     recommendedScore: params.recommendedScore,
     experimentalBlendedScore: params.experimentalBlendedScore,
     rationale: params.rationale,
@@ -121,53 +143,26 @@ export function buildDecisionRecord(params: {
     excludedInputs: params.excludedSources.map(toDecisionRecordInput),
     notificationRecipients: params.notificationRecipients,
     sourceErrors: params.sourceErrors,
+    decidedBy: params.decidedBy,
+    decisionNotes: params.decisionNotes,
   };
 }
 
-// If a facility's evaluation hasn't materially changed (same posture,
-// same recommended score, same government-source-error state) within
-// this window, skip persisting a near-duplicate record. Found live,
-// 2026-10-11: every dashboard page view/refresh calls /evaluate, which
-// was flooding the audit trail with 8-9 near-identical records seconds
-// apart during a single viewing session -- defeats the point of a
-// trustworthy decision record (a reviewer shouldn't have to wade
-// through refresh noise to find actual decision points). A genuinely
-// new/changed condition is NEVER deduplicated, regardless of timing.
-const DEDUP_WINDOW_MS = 5 * 60 * 1000;
+// NOTE (changed 2026-10-11, per user): dedup-by-time-window was the
+// wrong model. Decision records are no longer written on every
+// evaluation/page-view -- they are only written when a facility
+// manager explicitly records a decision (POST /decisions). An explicit
+// action never needs deduplicating; every one of them is meaningful by
+// definition. (Dedup logic that used to live here was removed, not
+// just disabled -- see git history if it's ever needed again.)
 
-function isMaterialDuplicate(candidate: DecisionRecord, previous: DecisionRecord | undefined): boolean {
-  if (!previous) return false;
-
-  const elapsedMs = new Date(candidate.evaluatedAt).getTime() - new Date(previous.evaluatedAt).getTime();
-  if (elapsedMs > DEDUP_WINDOW_MS) return false;
-
-  return (
-    candidate.posture === previous.posture &&
-    candidate.recommendedScore === previous.recommendedScore &&
-    candidate.governmentSourceErrored === previous.governmentSourceErrored
-  );
-}
-
-/** Append a decision record to the JSONL store, unless it's a material
- * duplicate of the facility's most recent record within the dedup
- * window (see constant above). Fire-and-forget-safe: callers should
- * not let a write failure block the HTTP response, but SHOULD log it
- * loudly, since a silently-failing audit trail defeats the entire
- * point of this deliverable.
- *
- * Returns true if a record was actually written, false if skipped as
- * a duplicate -- callers can use this to decide whether to tell the
- * decision-log UI to refresh. */
-export function appendDecisionRecord(record: DecisionRecord): boolean {
+/** Append a decision record to the JSONL store. Fire-and-forget-safe:
+ * callers should not let a write failure block the HTTP response, but
+ * SHOULD log it loudly, since a silently-failing audit trail defeats
+ * the entire point of this deliverable. */
+export function appendDecisionRecord(record: DecisionRecord): void {
   ensureDir();
-
-  const previous = getDecisionRecordsForFacility(record.facilityId)[0]; // newest-first
-  if (isMaterialDuplicate(record, previous)) {
-    return false;
-  }
-
   fs.appendFileSync(DECISION_RECORDS_FILE, JSON.stringify(record) + "\n", "utf-8");
-  return true;
 }
 
 /** Read all decision records, newest first. Loads the whole file into

@@ -13,6 +13,15 @@
           <p>{{ err.source }}: {{ err.error }}</p>
         }
       </section>
+    } @else if (evaluation.noGovernmentDataAvailable) {
+      <section class="no-data-banner">
+        <strong>ℹ No official government hazard data available for this facility right now</strong>
+        <p>
+          NWS was reached successfully and reports nothing active — this is a real "nothing to
+          report," not a system failure. But it means this recommendation rests on supplemental
+          sources only. Review them below before treating this as a confirmed "all clear."
+        </p>
+      </section>
     }
 
     <header class="posture-header" [ngClass]="postureClass(evaluation.posture)">
@@ -22,6 +31,41 @@
         Posture score: {{ evaluation.recommendedScore }} / 4
       </div>
     </header>
+
+    <section class="record-decision">
+      <h3>Record This Decision</h3>
+      <p class="hint">
+        Viewing this page does not record anything. A decision is only entered into the
+        audit trail when you explicitly confirm it below — the system recommends, a human decides.
+      </p>
+      <div class="decision-form">
+        <label>
+          Posture to record
+          <select [(ngModel)]="decidedPostureOverride">
+            <option [value]="evaluation.posture">Use system recommendation ({{ evaluation.postureLabel }})</option>
+            <option value="normal">Normal Operations</option>
+            <option value="delay">Delayed Arrival</option>
+            <option value="early_dismissal">Early Dismissal</option>
+            <option value="telework_unscheduled_leave">Telework / Unscheduled Leave</option>
+            <option value="closure">Closure</option>
+          </select>
+        </label>
+        <label>
+          Decided by
+          <input type="text" [(ngModel)]="decidedBy" placeholder="Name / role" />
+        </label>
+        <label class="notes-label">
+          Notes (optional)
+          <textarea [(ngModel)]="decisionNotes" rows="2" placeholder="Any context not captured above"></textarea>
+        </label>
+        <button class="record-button" (click)="recordDecision()" [disabled]="recordingDecision">
+          {{ recordingDecision ? 'Recording…' : 'Record Decision' }}
+        </button>
+        @if (recordedConfirmation) {
+          <p class="recorded-confirmation">✓ {{ recordedConfirmation }}</p>
+        }
+      </div>
+    </section>
 
     <section class="roster">
       <h3>

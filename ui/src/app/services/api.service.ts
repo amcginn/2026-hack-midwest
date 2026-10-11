@@ -35,4 +35,14 @@ export class ApiService {
     const params = facilityId ? `?facilityId=${encodeURIComponent(facilityId)}` : '';
     return this.http.get<{ count: number; records: DecisionRecord[] }>(`${this.baseUrl}/api/decision-records${params}`);
   }
+
+  recordDecision(
+    facilityId: string,
+    options: { decidedPosture?: string; decidedBy?: string; notes?: string } = {},
+  ): Observable<DecisionRecord> {
+    return this.http.post<DecisionRecord>(
+      `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/decisions`,
+      options,
+    );
+  }
 }

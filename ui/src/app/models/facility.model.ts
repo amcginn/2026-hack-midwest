@@ -103,6 +103,8 @@ export interface DecisionRecord {
   requestedDate: string;
   posture: Posture;
   postureLabel: string;
+  recommendedPosture: Posture | null;
+  wasOverridden: boolean;
   recommendedScore: number | null;
   experimentalBlendedScore: number | null;
   rationale: string;
@@ -111,6 +113,8 @@ export interface DecisionRecord {
   excludedInputs: DecisionRecordInput[];
   notificationRecipients: NotificationRecipient[];
   sourceErrors: SourceError[];
+  decidedBy?: string;
+  decisionNotes?: string;
 }
 
 export interface FacilityEvaluation {
@@ -119,6 +123,7 @@ export interface FacilityEvaluation {
   date: string;
   posture: Posture;
   postureLabel: string;
+  noGovernmentDataAvailable: boolean;
   recommendedScore: number | null;
   experimentalBlendedScore: number | null;
   rationale: string;

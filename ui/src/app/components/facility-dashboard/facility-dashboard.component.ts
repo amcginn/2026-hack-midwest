@@ -1,5 +1,6 @@
 import { Component, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { FacilityEvaluation, FacilityRoster, Posture, SourceOutcome } from '../../models/facility.model';
 import { DecisionLogComponent } from '../decision-log/decision-log.component';
@@ -42,7 +43,7 @@ function scoreToSeverityClass(score: number | undefined): SourceSeverityClass {
 @Component({
   selector: 'app-facility-dashboard',
   standalone: true,
-  imports: [CommonModule, DecisionLogComponent],
+  imports: [CommonModule, FormsModule, DecisionLogComponent],
   templateUrl: './facility-dashboard.component.html',
   styleUrl: './facility-dashboard.component.scss',
 })
@@ -56,12 +57,22 @@ export class FacilityDashboardComponent implements OnChanges {
   loading = false;
   error: string | null = null;
 
+  // Record-decision form state. See POST /decisions (server/src/index.ts) --
+  // the only route that actually persists an audit record; viewing/
+  // refreshing this dashboard does not (changed 2026-10-11, per user).
+  decidedPostureOverride = '';
+  decidedBy = '';
+  decisionNotes = '';
+  recordingDecision = false;
+  recordedConfirmation: string | null = null;
+
   constructor(private api: ApiService) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['facilityId'] && this.facilityId) {
       this.loadEvaluation();
       this.loadRoster();
+      this.recordedConfirmation = null;
     }
   }
 
@@ -75,10 +86,11 @@ export class FacilityDashboardComponent implements OnChanges {
       next: (res) => {
         this.evaluation = res;
         this.loading = false;
-        // /evaluate just persisted a new decision record server-side --
-        // refresh the log so the record that was just created is
-        // visible immediately, not just on the next facility switch.
-        this.decisionLog?.load();
+        // Default the override dropdown to the system's current
+        // recommendation -- /evaluate itself does NOT persist
+        // anything (see recordDecision below for the only action that
+        // does).
+        this.decidedPostureOverride = res.posture;
       },
       error: (err) => {
         this.error = 'Could not load evaluation for this facility.';
@@ -86,6 +98,37 @@ export class FacilityDashboardComponent implements OnChanges {
         console.error(err);
       },
     });
+  }
+
+  recordDecision(): void {
+    if (!this.facilityId || !this.evaluation) return;
+    this.recordingDecision = true;
+    this.recordedConfirmation = null;
+
+    const isOverride = this.decidedPostureOverride !== this.evaluation.posture;
+
+    this.api
+      .recordDecision(this.facilityId, {
+        decidedPosture: this.decidedPostureOverride || undefined,
+        decidedBy: this.decidedBy || undefined,
+        notes: this.decisionNotes || undefined,
+      })
+      .subscribe({
+        next: (record) => {
+          this.recordingDecision = false;
+          this.recordedConfirmation = isOverride
+            ? `Decision recorded: ${record.postureLabel} (overriding the system's ${this.evaluation?.postureLabel} recommendation).`
+            : `Decision recorded: ${record.postureLabel}.`;
+          // The decision was just persisted server-side -- refresh the
+          // log so it appears immediately.
+          this.decisionLog?.load();
+        },
+        error: (err) => {
+          this.recordingDecision = false;
+          this.recordedConfirmation = null;
+          console.error('Could not record decision', err);
+        },
+      });
   }
 
   loadRoster(): void {
@@ -135,7 +178,11 @@ const TODAY_STATUS_LABELS: Record<string, string> = {
   on_detail: 'On detail elsewhere',
   telework: 'Telework today',
   leave: 'On leave',
-  in_office_today: 'In office today (exception)',
+  // Was "In office today (exception)" -- redundant/clunky next to a
+  // scheduleNote that already explains the exception (found via
+  // screenshot review, 2026-10-11). The note carries the "why"; the
+  // label just needs to state what's true today.
+  in_office_today: 'In office today',
 };
 
 // "Normal Pattern" column -- only the three steady-state remoteStatus
