@@ -107,6 +107,8 @@ export class FacilityDashboardComponent implements OnChanges {
 
     const isOverride = this.decidedPostureOverride !== this.evaluation.posture;
 
+    const recommendedLabel = this.evaluation.postureLabel;
+
     this.api
       .recordDecision(this.facilityId, {
         decidedPosture: this.decidedPostureOverride || undefined,
@@ -117,8 +119,18 @@ export class FacilityDashboardComponent implements OnChanges {
         next: (record) => {
           this.recordingDecision = false;
           this.recordedConfirmation = isOverride
-            ? `Decision recorded: ${record.postureLabel} (overriding the system's ${this.evaluation?.postureLabel} recommendation).`
+            ? `Decision recorded: ${record.postureLabel} (overriding the system's ${recommendedLabel} recommendation).`
             : `Decision recorded: ${record.postureLabel}.`;
+          // Clear the form on successful submission -- a recorded
+          // decision is done; leaving stale notes/decidedBy in the
+          // fields invites accidental re-submission or confusion about
+          // whether the next action is already filled in (found via
+          // screenshot review, 2026-10-11). Reset the override back to
+          // the current recommendation, not blank, since that's still
+          // the correct default for a next decision.
+          this.decidedPostureOverride = this.evaluation?.posture ?? '';
+          this.decidedBy = '';
+          this.decisionNotes = '';
           // The decision was just persisted server-side -- refresh the
           // log so it appears immediately.
           this.decisionLog?.load();

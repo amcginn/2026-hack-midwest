@@ -51,6 +51,27 @@
     font-size: 0.9rem;
   }
 
+  .decision-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    margin-bottom: 0.4rem;
+
+    .override-flag {
+      color: #b26a00;
+      font-weight: 600;
+    }
+  }
+
+  .decision-notes {
+    font-size: 0.9rem;
+    background: #f5f5f5;
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    margin: 0.3rem 0 0.6rem;
+  }
+
   table {
     width: 100%;
     border-collapse: collapse;

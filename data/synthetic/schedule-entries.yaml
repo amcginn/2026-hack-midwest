@@ -16,4 +16,4 @@ schedules:
         status: telework
       - employeeId: E1006
         status: in_office_today
-        locationNote: "normally full_remote, in-office for quarterly review"
+        locationNote: "Normally fully remote; in office today for a quarterly review"

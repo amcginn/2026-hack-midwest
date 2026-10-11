@@ -20,6 +20,20 @@
 
         @if (expandedRecordId === record.recordId) {
           <div class="record-detail">
+            <div class="decision-meta">
+              @if (record.decidedBy) {
+                <span class="meta-item"><strong>Decided by:</strong> {{ record.decidedBy }}</span>
+              }
+              @if (record.wasOverridden) {
+                <span class="meta-item override-flag">
+                  ⚠ Overrode system recommendation ({{ record.recommendedPosture }})
+                </span>
+              }
+            </div>
+            @if (record.decisionNotes) {
+              <p class="decision-notes"><strong>Notes:</strong> {{ record.decisionNotes }}</p>
+            }
+
             <p class="rationale">{{ record.rationale }}</p>
 
             <h4>Inputs at the time of this decision</h4>
