@@ -984,9 +984,116 @@ next to the thing it qualifies.
 
 ---
 
-## 6. Architecture (not yet started)
+## 6. Architecture
 
-**Status: NOT STARTED** — deferred until sections 1-5 reviewed
+**Status: REVIEWED**
+
+### Original Definition
+
+(none — this section was explicitly deferred until sections 1-5 were done)
+
+### Findings
+
+Checked the user's actual day-to-day stack across `~/workspace/ccnx-*`
+projects to pick something with near-zero setup friction given ~7-8
+remaining build hours. Confirmed pattern: **TypeScript/Node Lambda
+functions, Angular frontend, CDK infra** (e.g. `ccnx-record-functions`
+has TS Lambda handlers; `ccnx-console-ui`/`ccnx-record-ui` are Angular
+apps with `angular.json`; every project has a `.cdk`/`cdk` directory).
+Reusing this stack directly rather than introducing something unfamiliar
+under time pressure.
+
+Key constraint from the challenge rules: live demo only, no slide decks,
+"be signed into your app already" — favors something fully local/
+pre-warmed over anything depending on live cloud infra during the pitch
+(cold starts, auth hiccups, network blips are all demo-risk with no
+upside, since code quality isn't judged).
+
+### Resolved Design
+
+**Local-first, production-shaped.** Build and run everything locally for
+the demo; the architecture itself maps directly onto a real AWS
+deployment with no redesign — only a deploy step — making this a true
+"realness/completeness" story rather than "demo app vs. separate
+production design":
+
+- **Backend**: Node + TypeScript, Express, run locally
+  (`npm run dev` / plain `node`). Not Lambda-shaped Lambda handlers for
+  the demo itself — just a normal long-running server, for simplicity and
+  zero cold-start risk during the pitch. **Production path**: this maps
+  directly onto API Gateway + Lambda (e.g. via `aws-serverless-express`
+  or restructuring routes as individual Lambda handlers, consistent with
+  the user's existing CCNX Lambda-function pattern) — no application
+  logic changes, just a deployment wrapper.
+- **Frontend**: Angular, with Angular's built-in codegen (`ng generate`)
+  used even for a couple of pages, to stay consistent with the user's
+  real stack rather than hand-rolling something unfamiliar. **Production
+  path**: `ng build` output is static files — S3 + CloudFront (optionally
+  behind auth later) — again zero application changes, just a deploy
+  target.
+- **Data**: synthetic facility/employee/schedule data as structured
+  JSON/JSONL or YAML on disk (building on `data/synthetic/` already
+  created), loaded into an in-memory repository layer at startup.
+  **Deliberately key-shaped like a DynamoDB single-table design** (e.g.
+  partition key = `facilityId`, sort key patterns for employees/schedule
+  entries under that facility) so swapping the in-memory repository for
+  a real DynamoDB client later is a thin adapter change, not a data-model
+  redesign. Decision records (section 5's output objects) are appended
+  to a local JSON file or kept in-memory for the demo; same
+  DynamoDB-shaped keying applies (`facilityId` + `recordedAt` as a
+  natural partition/sort pair).
+- **Live external APIs**: called directly and live during the demo (NWS,
+  USGS, AQICN with its provisioned key, Iowa DOT, optionally GA 511/KDKD
+  as the stretch delighter) — this is the one piece that's genuinely
+  live/networked, matching the challenge's explicit "not a mock feed"
+  requirement.
+- **CDK**: a `cdk/` folder sketching (not deploying) the production
+  shape — Lambda per evaluator or a single evaluation Lambda, EventBridge
+  schedule for periodic re-evaluation, DynamoDB for facility/employee/
+  decision-record tables, SNS/SES for real notification delivery, S3+
+  CloudFront for the Angular build. Shown during the pitch as "here's the
+  production deployment path," reusing patterns from the user's actual
+  CDK experience. **Not deployed** — written as credible, inspectable
+  code, not run.
+
+**UI delighters (confirmed in scope, time-boxed as stretch-after-core):**
+1. **Reactive re-evaluation**: a page to edit an employee's
+   location/status (the schedule-entry model from section 1) that
+   immediately re-runs the applicability rule and updates the
+   notification recipient list live — directly demonstrates the
+   "employee roster and building roster are frequently not the same
+   list" deliverable from the challenge text, interactively rather than
+   just in a static output example.
+2. **Multi-facility oversight picker**: "pick a state, pick an office,
+   see live results for that location" — not meant to imply full
+   nationwide data coverage. Purpose is narrower and specific: (a) prove
+   a super-user/federal-oversight role can view across facilities, not
+   just the single-facility-manager view the challenge text centers on,
+   and (b) prove the live-data pull genuinely varies by location (not
+   hardcoded to one demo facility). **Seed 5-6 facilities across a small
+   number of states** (building on Iowa + Montana already defined, adding
+   a few more) — enough to prove the pattern works across locations
+   without pretending to model all USDA facilities nationwide.
+3. KDKD/custom-source wiring remains the lowest-priority delighter (see
+   section 1/4) — only after 1 and 2 above, and only after the core
+   pipeline (scoring, tiered output, templated rationale) works
+   end-to-end.
+
+**No authn/z** — explicitly out of scope for this POC per user
+direction. Not a gap being hidden; worth a one-line callout in the pitch
+("auth is out of scope for this POC; a production deployment would gate
+the oversight view behind Cognito/IAM").
+
+### Open Questions
+- [ ] Express vs Fastify (minor, low-stakes — pick whichever the user
+      has more muscle memory with; defaulting to Express as the more
+      ubiquitous choice unless told otherwise)
+- [ ] Exact DynamoDB-shaped key design for the in-memory repository
+      (partition/sort key naming) — needs to happen alongside actual
+      implementation, not purely on paper
+- [ ] Whether Angular codegen targets a hand-written OpenAPI spec for
+      the backend, or something lighter — needs a decision at
+      implementation time, not blocking the architecture decision itself
 
 ---
 
@@ -1296,3 +1403,21 @@ pressure later.
 - **2026-10-11**: Confirmed KDKD/custom-source wiring is a stretch
   delighter, explicitly sequenced *after* the core pipeline works, not a
   parallel task. Updated section 1's note accordingly.
+- **2026-10-11**: Resolved section 6 (architecture). Checked user's real
+  `~/workspace/ccnx-*` projects to confirm actual day-to-day stack
+  (TypeScript/Node Lambda functions, Angular frontend, CDK infra) rather
+  than guessing — reusing it directly for near-zero setup friction with
+  ~7-8 hours remaining. Decision: local-first, production-shaped. Node/
+  Express backend run locally (maps to API Gateway+Lambda in production
+  with no logic changes), Angular frontend with codegen (maps to S3+
+  CloudFront with no logic changes), synthetic data kept as JSON/YAML on
+  disk but deliberately keyed like a DynamoDB single-table design
+  (facilityId as partition key) so a later real-DynamoDB swap is a thin
+  adapter change. CDK stack written to sketch the production shape but
+  explicitly NOT deployed — demo risk (cold starts, auth hiccups) has no
+  upside since code quality isn't judged. Confirmed UI delighters:
+  reactive re-evaluation on employee location/status edits, and a
+  multi-facility state/office picker explicitly scoped as "prove the
+  oversight-role pattern and live per-location data pull," not "model
+  all USDA facilities" — 5-6 seeded facilities across a few states, not
+  comprehensive coverage. No authn/z, explicitly out of scope for the POC.
