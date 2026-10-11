@@ -111,8 +111,16 @@ export class FacilityDashboardComponent implements OnChanges {
   todayStatusLabel(status: string): string {
     return TODAY_STATUS_LABELS[status] ?? status;
   }
+
+  remoteStatusLabel(status: string): string {
+    return REMOTE_STATUS_LABELS[status] ?? status;
+  }
 }
 
+// "Today" column -- includes schedule-exception statuses (on_detail,
+// telework, leave, in_office_today) in addition to the normal patterns,
+// since todayStatus falls back to remoteStatus when there's no
+// exception for the day.
 const TODAY_STATUS_LABELS: Record<string, string> = {
   in_office: 'In office (normal)',
   full_remote: 'Full remote (normal)',
@@ -121,4 +129,16 @@ const TODAY_STATUS_LABELS: Record<string, string> = {
   telework: 'Telework today',
   leave: 'On leave',
   in_office_today: 'In office today (exception)',
+};
+
+// "Normal Pattern" column -- only the three steady-state remoteStatus
+// values from the employee record itself (see
+// server/src/repository/types.ts RemoteStatus), never a schedule
+// exception value. Kept as a separate map so this column reads as
+// "their baseline," distinct from "today" even when they happen to
+// match.
+const REMOTE_STATUS_LABELS: Record<string, string> = {
+  in_office: 'In office',
+  full_remote: 'Full remote',
+  hybrid: 'Hybrid',
 };

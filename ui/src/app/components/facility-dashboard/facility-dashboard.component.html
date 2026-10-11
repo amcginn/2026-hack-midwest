@@ -132,7 +132,7 @@
               <tr [class.row-applicable]="e.applicableToday" [class.row-excluded]="!e.applicableToday">
                 <td>{{ e.name }}</td>
                 <td>{{ e.role }}</td>
-                <td>{{ e.remoteStatus }}</td>
+                <td>{{ remoteStatusLabel(e.remoteStatus) }}</td>
                 <td>
                   {{ todayStatusLabel(e.todayStatus) }}
                   @if (e.scheduleNote) {
