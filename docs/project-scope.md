@@ -919,10 +919,22 @@ next to the thing it qualifies.
 - [ ] Notification recipient logic details (who's excluded/included and
       why) — ties to section 1's "who's applicable at a facility today"
       rule, not yet connected to this output structure
-- [ ] Message drafting approach — templated vs generated text per posture.
-      The `urgencyNote`/rationale strings above could be templated
-      (fast, no dependency) or LLM-generated (more natural, adds a
-      dependency) — needs a decision before section 6 (architecture)
+- [x] **Resolved 2026-10-11**: message/rationale text generation is
+      **templated, not LLM-generated**. The combination space is small
+      and finite (severity tier x certainty tier x posture band x urgency
+      qualifier), so templates give fully deterministic, reliable output
+      with zero new dependencies (no LLM API key, no latency, no cost) —
+      and still satisfy the "plain-language paragraph a manager could
+      paste into an email" deliverable without needing generative
+      variability. This also simplifies section 6 (architecture): no LLM
+      inference path to provision/build around.
+      - `urgencyNote` strings: one short template per urgency value
+        (Immediate/Expected/Future/Past/Unknown), reusable across all
+        sources and facilities.
+      - `rationale` paragraph: a template keyed by posture band, with the
+        driving source(s) and their values interpolated in
+        (e.g. "{facility} is recommended for {posture} due to a {source}
+        {signal} ({severity}, {certainty}). {urgencyNote} {whatWouldChange}").
 
 ---
 
@@ -1217,3 +1229,9 @@ pressure later.
   string rather than used as a sort key. Section 5's output schema
   updated to a tiered `sources: {government, supplemental, narrative}`
   structure instead of a flat `inputs` list.
+- **2026-10-11**: Decided message/rationale generation is templated, not
+  LLM-generated — the combination space (severity tier x certainty tier x
+  posture band x urgency qualifier) is small enough that templates give
+  fully deterministic output with no new dependency, latency, or cost,
+  and still satisfy the plain-language-paragraph deliverable. Simplifies
+  section 6 (architecture) by removing any need for an LLM inference path.
