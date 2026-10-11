@@ -1173,9 +1173,97 @@ the oversight view behind Cognito/IAM").
 
 ---
 
-## 7. Build Plan / Time Budget (not yet started)
+## 7. Challenge Requirements Checklist & Gap Tracker
 
-**Status: NOT STARTED**
+**Status: ACTIVE — reviewed against the original challenge text,
+2026-10-11.** This section replaces the earlier "Build Plan / Time
+Budget" placeholder, which we decided not to need (check-ins instead of
+a detailed hour budget). This is the authoritative tracker for "did we
+actually build what was asked" — update it as gaps close, don't let it
+go stale like the deliverable fields did before this review caught it.
+
+### Scope: the data
+- [x] NWS/NOAA core source — live, no key, zone-based lookup
+- [x] Facility model (synthetic): location, hours, employee assignments,
+      essential-personnel flags, telework eligibility
+- [ ] **GAP**: `accessibilityNotes` field exists on the facility record
+      and is populated in synthetic data, but is never displayed in the
+      API response or UI. Named explicitly in the challenge
+      ("accessibility needs"). Trivial fix — just surface it.
+- [x] At least one supplementary signal — exceeded: USGS/NWPS (river
+      gauge) + AQICN (air quality), both real/live/scored. GA 511/KDKD
+      exist as narrative-only stretch sources.
+
+### Scope: the decision logic
+- [x] Graded recommendation, not binary — five-band posture ladder,
+      fixture-validated
+- [x] "One facility profile and two or three hazard types" — Iowa
+      (flood, primary) + Montana (winter storm, secondary); within the
+      explicit out-of-scope guidance, not over-built
+
+### Scope: the notification
+- [x] Right people — applicability rule (section 1), verified against
+      synthetic data including the roster-vs-building-list distinction
+- [ ] **GAP**: Right channel — no channel routing exists at all (e.g.
+      essential personnel -> SMS+email, others -> email only). Named
+      explicitly in the challenge. Not started.
+- [ ] **GAP**: Drafted message content — we have the recipient list,
+      but no actual notification message text per recipient/posture.
+      Named explicitly as deliverable #3. Not started.
+
+### Deliverable 1: Working system, live demo
+- [x] Confirmed repeatedly throughout the build against real live NWS/
+      USGS/AQICN data, not mocked
+
+### Deliverable 2: Recommendation with reasoning
+- [x] Recommended posture
+- [x] Every input with source and timestamp (visible per-source; UI
+      now also shows a human-readable "last updated" per card,
+      2026-10-11)
+- [ ] **GAP (regression)**: "Which threshold was crossed and by how
+      much" — was designed in section 5 (`thresholdCrossed` field) but
+      never implemented in the real `/evaluate` response. Lost during
+      the aggregation redesign (max-of-government-tier rewrite), not a
+      conscious cut.
+- [ ] **GAP (regression)**: Confidence — designed, not implemented. Same
+      cause as above.
+- [ ] **GAP (regression)**: "What would change the recommendation" —
+      designed (`whatWouldChange`), not implemented. Same cause.
+- [x] One-paragraph plain-language rationale — implemented, templated,
+      verified live
+
+### Deliverable 3: Notification package
+- [x] Recipient list with inclusion/exclusion logic (roster view +
+      applicability reasons)
+- [ ] **GAP**: Drafted message (see above, same gap)
+- [ ] **GAP**: Channel routing (see above, same gap)
+
+### Deliverable 4: The decision record
+- [ ] **GAP — highest priority.** The challenge explicitly calls this
+      "the deliverable most teams will skip." We currently have NOTHING
+      persisted — every `/evaluate` call is stateless, nothing is
+      written anywhere. No decision record exists at all yet.
+      **Timestamp nuance flagged by user (2026-10-11)**: must distinguish
+      "when the source itself last updated" (e.g. NWS `effective`/`sent`,
+      NWPS `validTime`, AQICN `time.iso` -- all confirmed available,
+      see Decision Log) from "when WE evaluated/recorded it." Both need
+      to be captured for genuine reconstructability -- recording only
+      our own eval time would lose "what was known, when" if the
+      upstream source's own data was itself stale at eval time.
+
+### Deliverable 5: Threshold defensibility
+- [x] Strong — CAP spec citations (official OASIS/NWS enumeration
+      definitions), EPA AQI breakpoints, NWS's own flood category
+      thresholds for the specific gauge in use. All real, all cited,
+      all documented in section 3/4 with sources.
+
+### Net priority order for remaining time (per 2026-10-11 review)
+1. Decision record persistence (highest-named priority, cheapest to add)
+2. Restore `thresholdCrossed` / `confidence` / `whatWouldChange` (was
+   designed, just needs re-implementing against the current response
+   shape)
+3. Notification message + channel routing
+4. Display `accessibilityNotes` (trivial)
 
 ---
 
@@ -1643,3 +1731,31 @@ pressure later.
   dashboard correctly showed "Status Unknown — Verify Manually" with
   the real fetch error surfaced, then reverted and confirmed normal
   operation resumed.
+- **2026-10-11**: Full review against the original challenge text,
+  requirement by requirement, at user's request. Found real gaps, not
+  just polish items: (1) `accessibilityNotes` captured but never
+  displayed. (2) No notification channel routing or drafted message
+  content at all -- named explicitly as deliverable #3 and in the
+  "right channel" notification requirement. (3) **Regression**:
+  `thresholdCrossed`, `confidence`, and `whatWouldChange` were designed
+  in section 5 but silently dropped when the aggregation logic was
+  rewritten (max-of-government-tier fix) -- the response shape was
+  rebuilt at that point and these three fields were never carried
+  forward, not a conscious scope cut. (4) **Highest priority**: no
+  decision record persistence exists at all -- every `/evaluate` call
+  is stateless. The challenge explicitly names this "the deliverable
+  most teams will skip," and we are currently in that group. Confirmed
+  threshold defensibility (deliverable 5) remains strong and well-
+  documented. Added section 7 as a formal, continuously-updated gap
+  tracker (replacing the unused "Build Plan/Time Budget" placeholder)
+  so these don't silently regress again. Verified live timestamp
+  availability per source (NWS `sent`/`effective`/`onset`/`expires`,
+  NWPS `validTime`, AQICN `time.iso`) ahead of building the decision
+  record, per user's flag that the record needs to distinguish
+  source-reported update time from our own evaluation time.
+- **2026-10-11**: Made severity/certainty/urgency visually prominent on
+  government-source cards (colored badges) instead of a muted caption
+  line, per user request -- these are the explicitly-named basis of the
+  NWS CAP scoring formula (section 3) and the challenge calls them out
+  by name. Also added a human-readable "last updated" timestamp to
+  every source card (government and supplemental).
