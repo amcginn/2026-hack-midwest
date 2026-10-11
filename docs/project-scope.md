@@ -789,19 +789,113 @@ without us needing to build that generality for the hackathon.
 > whatWouldChange, rationale, notification (recipients/message/channels),
 > decisionRecordId, recordedAt.
 
-### Findings
+### Findings (2026-10-11)
 
-(none yet)
+Resolved the open "does urgency rescale the score" question from section
+3 by reframing it as a **presentation** question rather than a pure math
+question. Urgency does not need to be a hidden numeric multiplier — it
+can be a **visible qualifier displayed next to each source's score**, in
+plain language the facility manager would use directly. This also
+answers the earlier-deferred "how do we prioritize findings for a
+facility manager" question: group by source tier first, score within
+tier second, with urgency as a human-readable annotation rather than a
+sort key.
 
 ### Resolved Design
 
+**Output is organized by source tier, matching section 4's weighting
+model** (government/primary first, supplemental next, narrative-only
+last), not as a flat list of inputs:
+
+```
+NWS (official / primary, weight 1.0):
+  Flood Warning - Clinton County, IA
+    Severity: Severe | Certainty: Observed | Urgency: Immediate
+    Score: 3.0 (Telework / Unscheduled Leave band)
+    "Observed and ongoing - act now."
+
+  [if present] Flood Watch - adjacent county
+    Severity: Severe | Certainty: Possible | Urgency: Future
+    Score: 1.5 (Delay band)
+    "Worth evaluating for the day and may adjust guidance later,
+     but not an immediate trigger."
+
+AQI / AQICN (supplemental, weight 0.4):
+  AQI 64 (Moderate)
+    Score: 1.0
+    "Air quality moderate; sensitive groups should limit prolonged exposure."
+
+USGS Gauge (supplemental, weight 0.5):
+  9.86 ft (flood stage 11.0 ft)
+    Score: 2.0
+    "Below flood stage but rising; monitor."
+
+Iowa DOT Road Conditions (supplemental, weight 0.4):
+  Seasonal (normal)
+    Omitted from aggregate (absence is not a positive signal, per
+    section 2's rule - not scored as 0, simply not counted)
+
+GA 511 / KDKD (narrative, not scored):
+  "DOT reports trees/powerlines down in the area."
+    Shown for awareness only, does not affect the aggregate score
+```
+
+Full output object, incorporating the tiered structure:
+
 ```json
 {
+  "facilityId": "USDA-FSA-IA-CLINTON",
   "posture": "unscheduled_leave_telework",
-  "inputs": [ "...evaluation outcomes from section 3..." ],
-  "thresholdCrossed": "weighted score 2.8 vs telework cutoff 2.5",
-  "confidence": "high (certainty=Likely)",
-  "whatWouldChange": "If certainty drops to Possible, score falls to 1.9 -> downgrades to early dismissal",
+  "aggregateScore": 3.0,
+  "sources": {
+    "government": [
+      {
+        "source": "NWS",
+        "signal": "Flood Warning",
+        "severity": "Severe",
+        "certainty": "Observed",
+        "urgency": "Immediate",
+        "urgencyNote": "Observed and ongoing - act now.",
+        "status": "scored",
+        "postureScore": 3.0,
+        "weight": 1.0
+      }
+    ],
+    "supplemental": [
+      {
+        "source": "AQICN",
+        "value": 64,
+        "valueLabel": "Moderate",
+        "postureScore": 1.0,
+        "weight": 0.4
+      },
+      {
+        "source": "USGS",
+        "value": 9.86,
+        "valueUnit": "ft",
+        "referenceValue": 11.0,
+        "referenceLabel": "flood stage",
+        "postureScore": 2.0,
+        "weight": 0.5
+      },
+      {
+        "source": "IowaDOT",
+        "value": "Seasonal",
+        "status": "absent",
+        "note": "baseline/normal - omitted from aggregate, not scored as 0"
+      }
+    ],
+    "narrative": [
+      {
+        "source": "GA511",
+        "text": "DOT reports trees/powerlines down in the area.",
+        "scored": false
+      }
+    ]
+  },
+  "thresholdCrossed": "aggregate 3.0 vs telework cutoff 2.5",
+  "confidence": "high (certainty=Observed)",
+  "whatWouldChange": "If the NWS Flood Warning is downgraded to an Advisory or certainty drops, aggregate falls below the telework threshold.",
   "rationale": "<generated one-paragraph text>",
   "notification": {
     "recipients": [],
@@ -813,9 +907,22 @@ without us needing to build that generality for the hackathon.
 }
 ```
 
+**Prioritization-for-presentation rule** (resolves the earlier-deferred
+question): sort by tier (government > supplemental > narrative), then by
+score descending within tier. Urgency is always rendered as a qualifier
+string under the relevant entry, never used as a sort key or folded into
+the numeric score — keeps the formula in section 3 simple/auditable while
+still surfacing timing information where a human needs it most: right
+next to the thing it qualifies.
+
 ### Open Questions
-- [ ] Notification recipient logic details (who's excluded/included and why)
-- [ ] Message drafting approach — templated vs generated text per posture
+- [ ] Notification recipient logic details (who's excluded/included and
+      why) — ties to section 1's "who's applicable at a facility today"
+      rule, not yet connected to this output structure
+- [ ] Message drafting approach — templated vs generated text per posture.
+      The `urgencyNote`/rationale strings above could be templated
+      (fast, no dependency) or LLM-generated (more natural, adds a
+      dependency) — needs a decision before section 6 (architecture)
 
 ---
 
@@ -1083,3 +1190,30 @@ pressure later.
   posture bands, including correctly placing a low-certainty "Watch" well
   below a "Warning" of the same severity label, which directly reflects
   the "upcoming but yet unknown" distinction raised earlier in scoping.
+- **2026-10-11**: User supplied the ArcGIS Hub v3 datasets API
+  (`opendata.arcgis.com/api/v3/datasets?filter[slug]=...`) as an
+  alternative to the non-fetchable JS-rendered "about" page. Confirmed
+  working and useful — includes field-level statistics. Found
+  `previous_road_condition` distribution across current segments: 683
+  "Partially Covered", 299 "Seasonal", 32 "Completely Covered" — NOT all
+  baseline, contradicting the live check. **Re-verified live
+  `ROAD_CONDITION` directly via the FeatureServer query again: still all
+  1014 segments at "Seasonal" right now.** Conclusion: the Hub stats
+  endpoint's `previous_road_condition` numbers reflect a recent-past
+  snapshot (an actual winter event that has since cleared), not current
+  live state — the two fields answer different questions
+  ("what was it recently" vs "what is it now") and aren't contradictory
+  once that's understood. Current live state for scoring purposes
+  remains all-Seasonal/normal, consistent with earlier findings.
+- **2026-10-11**: Resolved the urgency-scoring question from section 3 by
+  reframing it as a presentation design, not a pure math one. Urgency is
+  rendered as a plain-language qualifier displayed next to each source's
+  score (e.g. "worth evaluating for the day... but not an IMMEDIATE"),
+  not folded into the numeric score. This also resolved the
+  earlier-deferred "how to prioritize findings for a facility manager"
+  question: output is grouped by source tier (government/primary,
+  supplemental, narrative-only — matching section 4's weighting model),
+  sorted by score within tier, with urgency always shown as a qualifier
+  string rather than used as a sort key. Section 5's output schema
+  updated to a tiered `sources: {government, supplemental, narrative}`
+  structure instead of a flat `inputs` list.
