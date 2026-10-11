@@ -1275,6 +1275,44 @@ go stale like the deliverable fields did before this review caught it.
 3. Notification message + channel routing
 4. Display `accessibilityNotes` (trivial)
 
+### Confirmed behavior: evaluation is always against current-moment
+### weather, regardless of requested schedule date (2026-10-11)
+
+User asked whether the system accounts for future/scheduled dates, or
+always decides based on the current moment. Checked the actual route
+code directly rather than relying on memory:
+
+`GET /api/facilities/:id/evaluate?date=YYYY-MM-DD` — the `date` param
+is threaded through ONLY to the employee schedule/notification lookup
+(`getScheduleEntries`/`getApplicableEmployees`/`getNotificationRecipients`).
+It is NOT passed to `evaluateNwsAlerts`/`evaluateUsgsGaugeHeight`/
+`evaluateAqicn` at all -- those three always call the live/current-
+moment APIs, with no date parameter supported by the adapters.
+
+**Net behavior**: the system always answers "given RIGHT NOW's weather,
+what should posture be for the staffing on DATE X." It does NOT do
+forecast-based evaluation for a future date (e.g. "what will Thursday's
+weather require" using an actual weather forecast). This is reasonable
+for the normal use case (deciding today's posture using today's
+schedule) but would be misleading if `date` were used to ask about a
+day further out, expecting forecast-aware reasoning -- we'd silently
+substitute today's weather instead.
+
+This also directly answers why a `Future`-urgency NWS alert (e.g. a
+Watch) doesn't get any special date-aware treatment: it's scored at
+face value by the CAP formula (lower certainty modifier, landing lower
+on the posture ladder) same as any other alert, right now. There is no
+logic that reduces or defers action based on how far out `urgency:
+Future` implies the hazard is -- this is a known simplification, not a
+bug, but worth being precise about in the pitch so we don't imply
+real forecasting capability we don't have.
+
+**Not fixed this round** -- noted here as a known limitation /
+potential future enhancement (NWS does expose a separate forecast
+endpoint, `/gridpoints/.../forecast`, found during early data-source
+scoping but never built into an adapter -- see section 1's "Other
+Potential Future Inputs").
+
 ---
 
 ## Decision Log
