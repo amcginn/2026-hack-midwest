@@ -34,8 +34,11 @@
         <p class="muted">No active government-source alerts for this facility.</p>
       }
       @for (source of evaluation.sources.government; track source.rawRef) {
-        <div class="source-card">
-          <div class="source-title">{{ source.source }} — {{ source.signal }}</div>
+        <div class="source-card" [ngClass]="sourceSeverityClass(source)">
+          <div class="source-title">
+            <span class="severity-icon">{{ sourceSeverityIcon(source) }}</span>
+            {{ source.source }} — {{ source.signal }}
+          </div>
           <div class="source-detail">
             Severity: {{ source.detail['severity'] }} | Certainty: {{ source.detail['certainty'] }} |
             Urgency: {{ source.detail['urgency'] }}
@@ -51,8 +54,11 @@
         <p class="muted">No supplemental source data available.</p>
       }
       @for (source of evaluation.sources.supplemental; track source.source) {
-        <div class="source-card">
-          <div class="source-title">{{ source.source }} — {{ source.signal }}</div>
+        <div class="source-card" [ngClass]="sourceSeverityClass(source)">
+          <div class="source-title">
+            <span class="severity-icon">{{ sourceSeverityIcon(source) }}</span>
+            {{ source.source }} — {{ source.signal }}
+          </div>
           <div class="source-note">{{ source.note }}</div>
         </div>
       }

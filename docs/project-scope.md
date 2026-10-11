@@ -1604,3 +1604,18 @@ pressure later.
   on_detail, Morgan excluded telework, Taylor included via the
   in_office_today exception -- the specific case the data model
   redesign was built to handle, confirmed working end-to-end).
+- **2026-10-11**: Scaffolded the Angular UI (`ui/`, Angular 19 CLI,
+  standalone components, codegen-generated per section 6). Built:
+  `FacilityPickerComponent` (state -> office picker, delighter #2),
+  `FacilityDashboardComponent` (tiered source display, posture header,
+  rationale, notification recipient table), `ApiService` (typed HTTP
+  client against the real backend), and hand-written TypeScript models
+  mirroring the backend's actual response shape (verified field-by-field
+  against a live `/evaluate` call, not assumed). Found and fixed a real
+  gap during verification: Express had no CORS headers, which curl
+  doesn't enforce but a real browser would -- added `cors` middleware
+  scoped to `http://localhost:4200`, confirmed `Access-Control-Allow-
+  Origin` now present. Verified both `/api/facilities` and
+  `/api/facilities/:id/evaluate` end-to-end against the running backend
+  with the `Origin` header a browser would send. Production build
+  (`ng build`) and dev server (`ng serve`) both confirmed working.

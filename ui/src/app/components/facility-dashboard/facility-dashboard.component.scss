@@ -61,6 +61,7 @@ section {
 
 .source-card {
   border: 1px solid #ddd;
+  border-left: 4px solid #ddd;
   border-radius: 6px;
   padding: 0.75rem 1rem;
   margin-bottom: 0.5rem;
@@ -78,6 +79,49 @@ section {
   .source-note {
     font-size: 0.9rem;
     margin-top: 0.25rem;
+  }
+
+  .severity-icon {
+    margin-right: 0.35rem;
+  }
+
+  // Per-source severity cue -- lets a judge scan the dashboard and see
+  // what's actually contributing to non-normal status without reading
+  // every card's text. Mirrors server/src/evaluator/posture.ts bucket
+  // boundaries, applied per-source.
+  &.severity-none {
+    border-left-color: #2e7d32;
+    .severity-icon {
+      color: #2e7d32;
+    }
+  }
+  &.severity-low {
+    border-left-color: #f9a825;
+    background: #fffaf0;
+    .severity-icon {
+      color: #f9a825;
+    }
+  }
+  &.severity-moderate {
+    border-left-color: #ef6c00;
+    background: #fff6ed;
+    .severity-icon {
+      color: #ef6c00;
+    }
+  }
+  &.severity-high {
+    border-left-color: #d84315;
+    background: #fef0ec;
+    .severity-icon {
+      color: #d84315;
+    }
+  }
+  &.severity-severe {
+    border-left-color: #b71c1c;
+    background: #fdecea;
+    .severity-icon {
+      color: #b71c1c;
+    }
   }
 }
 
