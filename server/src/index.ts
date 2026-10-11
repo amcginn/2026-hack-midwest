@@ -19,6 +19,13 @@ import { aggregateSources } from "./evaluator/aggregate";
 import { scoreToPosture, POSTURE_LABELS } from "./evaluator/posture";
 import { buildRationale } from "./rationale/templates";
 import type { SourceOutcome } from "./sources/types";
+import {
+  buildDecisionRecord,
+  appendDecisionRecord,
+  getAllDecisionRecords,
+  getDecisionRecordsForFacility,
+  getDecisionRecordById,
+} from "./repository/decisionRecord";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
@@ -228,6 +235,39 @@ app.get("/api/facilities/:facilityId/evaluate", async (req: Request, res: Respon
   const supplementalScored = scoredSources.filter((s) => s.tier === "supplemental");
   const rationale = buildRationale(facility.name, posture, drivingSource, supplementalScored, governmentSourceErrored);
   const recipients = getNotificationRecipients(facilityId, date);
+  const notificationRecipients = recipients.map((r) => ({
+    employeeId: r.employee.employeeId,
+    name: r.employee.name,
+    essentialPersonnel: r.employee.essentialPersonnel,
+    reason: r.reason,
+  }));
+
+  // Decision record: section 7's highest-priority gap. Persisted on
+  // every evaluation so the system builds a real, reconstructable
+  // audit trail -- "what was known, when, and what was decided" -- not
+  // just a point-in-time API response that disappears after the
+  // request. Write failures are logged loudly but never block the
+  // response; a broken audit trail should be visible, not silent.
+  try {
+    const record = buildDecisionRecord({
+      facilityId,
+      facilityName: facility.name,
+      requestedDate: date,
+      posture,
+      postureLabel: POSTURE_LABELS[posture],
+      recommendedScore: recommendedScore ?? null,
+      experimentalBlendedScore: experimentalBlendedScore ?? null,
+      rationale,
+      governmentSourceErrored,
+      scoredSources,
+      excludedSources,
+      notificationRecipients,
+      sourceErrors,
+    });
+    appendDecisionRecord(record);
+  } catch (err) {
+    console.error("FAILED TO PERSIST DECISION RECORD -- audit trail is incomplete:", err);
+  }
 
   res.json({
     facilityId,
@@ -247,16 +287,35 @@ app.get("/api/facilities/:facilityId/evaluate", async (req: Request, res: Respon
       excluded: excludedSources,
     },
     notification: {
-      recipientCount: recipients.length,
-      recipients: recipients.map((r) => ({
-        employeeId: r.employee.employeeId,
-        name: r.employee.name,
-        essentialPersonnel: r.employee.essentialPersonnel,
-        reason: r.reason,
-      })),
+      recipientCount: notificationRecipients.length,
+      recipients: notificationRecipients,
     },
     sourceErrors,
   });
+});
+
+/**
+ * Decision record history -- the audit trail required by deliverable
+ * #4 ("what was known, when, and what was decided... reconstructable
+ * after the fact"). Every /evaluate call appends one record here.
+ *
+ * Examples:
+ *   GET /api/decision-records                       (all, newest first)
+ *   GET /api/decision-records?facilityId=USDA-...    (one facility's history)
+ */
+app.get("/api/decision-records", (req: Request, res: Response) => {
+  const facilityId = typeof req.query.facilityId === "string" ? req.query.facilityId : undefined;
+  const records = facilityId ? getDecisionRecordsForFacility(facilityId) : getAllDecisionRecords();
+  res.json({ count: records.length, records });
+});
+
+app.get("/api/decision-records/:recordId", (req: Request, res: Response) => {
+  const record = getDecisionRecordById(req.params.recordId);
+  if (!record) {
+    res.status(404).json({ error: `Unknown recordId: ${req.params.recordId}` });
+    return;
+  }
+  res.json(record);
 });
 
 app.listen(PORT, () => {

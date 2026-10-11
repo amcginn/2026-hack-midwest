@@ -1,0 +1,76 @@
+<section class="decision-log">
+  <h3>Decision Record History ({{ records.length }})</h3>
+  <p class="hint">
+    Every evaluation run for this facility is recorded here — what was known, when, and what
+    was decided — so a closure (or non-closure) decision can be reconstructed after the fact.
+  </p>
+
+  @if (loading) {
+    <p>Loading history…</p>
+  } @else if (records.length === 0) {
+    <p class="muted">No decision records yet for this facility. Evaluate it to create the first one.</p>
+  } @else {
+    @for (record of records; track record.recordId) {
+      <div class="record-card">
+        <button class="record-summary" (click)="toggleExpanded(record.recordId)">
+          <span class="record-time">{{ record.evaluatedAt | date: 'medium' }}</span>
+          <span class="record-posture">{{ record.postureLabel }}</span>
+          <span class="record-toggle">{{ expandedRecordId === record.recordId ? '▲' : '▼' }}</span>
+        </button>
+
+        @if (expandedRecordId === record.recordId) {
+          <div class="record-detail">
+            <p class="rationale">{{ record.rationale }}</p>
+
+            <h4>Inputs at the time of this decision</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Signal</th>
+                  <th>Score</th>
+                  <th>Source Last Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (input of record.inputs; track input.source + input.signal) {
+                  <tr>
+                    <td>{{ input.source }}</td>
+                    <td>{{ input.signal }}</td>
+                    <td>{{ input.postureScore ?? '—' }}</td>
+                    <td>{{ input.sourceReportedAt | date: 'medium' }}</td>
+                  </tr>
+                }
+                @if (record.inputs.length === 0) {
+                  <tr>
+                    <td colspan="4" class="muted">No scored inputs at this evaluation.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+
+            <h4>Notified ({{ record.notificationRecipients.length }})</h4>
+            @if (record.notificationRecipients.length === 0) {
+              <p class="muted">No one was notified for this decision.</p>
+            } @else {
+              <ul class="recipients-list">
+                @for (r of record.notificationRecipients; track r.employeeId) {
+                  <li>{{ r.name }}{{ r.essentialPersonnel ? ' (essential)' : '' }}</li>
+                }
+              </ul>
+            }
+
+            @if (record.sourceErrors.length > 0) {
+              <h4>Source Errors at This Evaluation</h4>
+              @for (err of record.sourceErrors; track err.source) {
+                <p class="error">{{ err.source }}: {{ err.error }}</p>
+              }
+            }
+
+            <p class="record-id">Record ID: {{ record.recordId }}</p>
+          </div>
+        }
+      </div>
+    }
+  }
+</section>

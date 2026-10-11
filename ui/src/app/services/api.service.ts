@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Facility, FacilityEvaluation, FacilityRoster } from '../models/facility.model';
+import { Facility, FacilityEvaluation, FacilityRoster, DecisionRecord } from '../models/facility.model';
 
 @Injectable({
   providedIn: 'root',
@@ -29,5 +29,10 @@ export class ApiService {
     return this.http.get<FacilityRoster>(
       `${this.baseUrl}/api/facilities/${encodeURIComponent(facilityId)}/roster${params}`,
     );
+  }
+
+  getDecisionRecords(facilityId?: string): Observable<{ count: number; records: DecisionRecord[] }> {
+    const params = facilityId ? `?facilityId=${encodeURIComponent(facilityId)}` : '';
+    return this.http.get<{ count: number; records: DecisionRecord[] }>(`${this.baseUrl}/api/decision-records${params}`);
   }
 }

@@ -1,7 +1,8 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { FacilityEvaluation, FacilityRoster, Posture, SourceOutcome } from '../../models/facility.model';
+import { DecisionLogComponent } from '../decision-log/decision-log.component';
 
 const POSTURE_CLASS: Record<Posture, string> = {
   normal: 'posture-normal',
@@ -41,12 +42,14 @@ function scoreToSeverityClass(score: number | undefined): SourceSeverityClass {
 @Component({
   selector: 'app-facility-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DecisionLogComponent],
   templateUrl: './facility-dashboard.component.html',
   styleUrl: './facility-dashboard.component.scss',
 })
 export class FacilityDashboardComponent implements OnChanges {
   @Input() facilityId: string | null = null;
+
+  @ViewChild(DecisionLogComponent) decisionLog?: DecisionLogComponent;
 
   evaluation: FacilityEvaluation | null = null;
   roster: FacilityRoster | null = null;
@@ -72,6 +75,10 @@ export class FacilityDashboardComponent implements OnChanges {
       next: (res) => {
         this.evaluation = res;
         this.loading = false;
+        // /evaluate just persisted a new decision record server-side --
+        // refresh the log so the record that was just created is
+        // visible immediately, not just on the next facility switch.
+        this.decisionLog?.load();
       },
       error: (err) => {
         this.error = 'Could not load evaluation for this facility.';

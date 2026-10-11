@@ -84,6 +84,35 @@ export interface FacilityRoster {
   roster: RosterEmployee[];
 }
 
+export interface DecisionRecordInput {
+  source: string;
+  signal: string;
+  status: SourceStatus;
+  postureScore?: number;
+  weight: number;
+  sourceReportedAt: string;
+  note?: string;
+  detail: Record<string, unknown>;
+}
+
+export interface DecisionRecord {
+  recordId: string;
+  evaluatedAt: string;
+  facilityId: string;
+  facilityName: string;
+  requestedDate: string;
+  posture: Posture;
+  postureLabel: string;
+  recommendedScore: number | null;
+  experimentalBlendedScore: number | null;
+  rationale: string;
+  governmentSourceErrored: boolean;
+  inputs: DecisionRecordInput[];
+  excludedInputs: DecisionRecordInput[];
+  notificationRecipients: NotificationRecipient[];
+  sourceErrors: SourceError[];
+}
+
 export interface FacilityEvaluation {
   facilityId: string;
   facilityName: string;
