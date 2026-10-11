@@ -1,90 +1,138 @@
-# Demo Script — USDA Weather-Driven Facility Decisions
+# Submission Script — FacMan (USDA Weather-Driven Facility Decisions)
 
-3-minute live pitch, no slides. Order below maps directly onto the 5
-deliverables so nothing gets missed under time pressure.
+**Format**: 30-minute written/recorded submission (short recorded demo
+embedded in it), submitted ahead of live demos later the same morning.
+"FacMan" is the product/branding name used verbally and in the written
+submission only — it is NOT wired into the app itself (the app's own
+title stays the literal challenge framing, "USDA Weather-Driven
+Facility Decisions"). Keep that distinction consistent across both the
+written submission and the live demo later.
 
-## Setup (before judges arrive)
+## Setup (before recording)
 - `cd server && npm run dev` (port 3001)
 - `cd ui && npx ng serve` (port 4200)
-- Open `http://localhost:4200`, pick **Clinton, IA** first (most
-  stable/verified scenario — live Flood Warning)
-- Have a second tab ready on **Great Falls, MT** (Winter Storm Warning
-  — proves it's not hardcoded to one hazard type)
-- Check `data/decision-records/` and `data/notification-log/` — clear
-  test-pollution records if any exist (`rm -f data/decision-records/records.jsonl data/notification-log/notifications.jsonl`)
+- Open `http://localhost:4200` at the root/overview page first (new
+  as of this session) — shows the app description and the data-source
+  list before any facility is picked
+- Pick **Clinton, IA** first (most stable/verified scenario — live
+  Flood Warning)
+- Have **Great Falls, MT** ready as the second stop (Winter Storm
+  Warning — proves it's not hardcoded to one hazard type)
+- Decide now whether to clear `data/decision-records/records.jsonl`
+  and `data/notification-log/notifications.jsonl` before recording --
+  they currently contain real test data from this build session. Not
+  required, but cleaner for a recording meant to represent the product.
 
-## The pitch (talking points, ~30 sec)
-"When severe weather threatens a USDA facility, a manager needs three
-things fast: what's actually happening, who's affected, and a record
-of why they decided what they decided. This pulls live NWS data —
-real alerts, right now, somewhere in the country — plus river gauge,
-air quality, and state DOT road data, and turns it into one graded
-recommendation a human can act on in seconds."
+## Written submission structure (30 min total — plenty of room)
 
-## Walkthrough (deliverable-by-deliverable, ~2 min)
+### 1. Problem framing (~2 min)
+Lead with the challenge's own framing, since judges will be scoring
+against it directly: facility managers today check a forecast, maybe
+a road map, maybe a school closure page, and make a 4am call with no
+consistent record of why. The notification problem compounds it --
+the building roster and the "who's actually affected today" list are
+rarely the same list.
 
-**1. Live data, not mocked** — Point at the Clinton page. "This Flood
-Warning is live from api.weather.gov right now." Switch to Great
-Falls. "Different facility, different state, different hazard —
-same pipeline, zero code changes."
+### 2. What FacMan does (~2 min)
+One sentence: ingests live NWS alerts plus river, air-quality, and
+state DOT data, scores them against officially-sourced thresholds,
+and produces one graded recommendation, a drafted notification package,
+and a permanent decision record — for a human to act on, not to
+replace the human's judgment.
 
-**2. Recommendation with reasoning** — Point at the posture badge +
-rationale. Call out by name: "posture, every input with source and
-timestamp, which threshold was crossed, confidence, what would change
-it, and a plain-language paragraph a manager could paste into an
-email." (All five sub-items are literally visible on screen at once —
-worth saying each one out loud since it maps word-for-word to the
-deliverable text.)
+Explicitly state the generalization point here, since it's a genuine
+differentiator: the pipeline isn't weather-specific. Weather is the
+primary signal because the challenge named NWS as the core source, but
+the facility model, scoring pipeline, and notification/audit layers are
+built to take on any operational signal a manager would check -- adding
+a new state's road-condition feed took one new file and zero changes
+to the evaluation logic (demonstrated live this build session with
+Iowa DOT).
 
-**3. Notification package** — Scroll to "Who Would Be Notified." Point
-out: the roster vs. who's actually applicable today (someone on
-detail elsewhere, someone normally remote but in-office today for a
-specific reason). Expand the drafted-message preview — show the
-essential-personnel line is separate and unconditional. Click
-**Notify** on one row — "that's logged immediately below."
+### 3. Recorded demo (~5-8 min of actual recording, keep it tight)
+Walk the deliverables in this order, using Clinton then Great Falls:
 
-**4. The decision record** — Scroll to Decision Record History. "This
-is the one most teams skip." Click **Record Decision**, submit it,
-show it appear with: what was recommended vs. what was actually
-decided, every input's own timestamp distinct from when the decision
-was made, and whether it was an override.
+1. **Live data** — show the Flood Warning is a real, current NWS
+   alert (point at the timestamp/offset). Switch to Great Falls --
+   different hazard, different state, same pipeline.
+2. **Recommendation with reasoning** — posture badge, rationale
+   paragraph, and the three explanation rows (why this level / how
+   sure / what to watch for) all visible together. Say each deliverable
+   sub-item out loud once since the mapping is literal.
+3. **Notification package** — scroll to "Who Would Be Notified."
+   Show the roster-vs-applicable-today distinction (someone on detail
+   elsewhere excluded, someone normally remote but in-office today
+   included). Expand the drafted message preview, point out the
+   essential-personnel line is separate and unconditional. Click
+   Notify on one row, show it land in the log.
+4. **Decision record** — Record a decision, show the history entry:
+   recommended vs. actually decided, override flag, per-input
+   timestamps distinct from the decision timestamp.
+5. **Threshold defensibility** — open an NWS card's severity/
+   certainty/urgency badges, name the CAP spec as the source. Mention
+   Iowa DOT's own published legend and USGS's own flood category as
+   the same defensibility pattern for the supplemental sources.
+6. **Generalization proof** — switch to San Diego or Pendleton: "added
+   in the last hour of this build by editing a data file, zero code
+   touched, worked against live alerts on the first try."
 
-**5. Threshold defensibility** — Open one NWS card's severity/
-certainty/urgency badges. "These three fields come straight from the
-CAP alert spec — same taxonomy phones use for emergency alerts. Our
-score is severity × certainty, officially defined bands, not a
-guessed number." Mention Iowa DOT's legend and USGS's own flood
-category as the same pattern for the supplemental sources.
+### 4. Architecture / "why is this only local" (~3-4 min — include this
+proactively in the written submission, don't wait to be asked)
 
-## If asked "does this scale / is this just these two facilities"
-Switch to San Diego or Pendleton live. "These two were added in the
-last hour by editing a data file — no code touched — and both
-evaluated correctly against live alerts on the first try, including
-one with 9 simultaneous active warnings in one zone." This is the
-strongest "this isn't a demo-rigged toy" moment available — use it if
-there's any skepticism about hardcoding.
+This is worth stating up front rather than defensively, since a judge
+skimming a local-only demo could reasonably wonder if that reflects a
+limitation rather than a choice:
 
-## If asked about production/AWS
-"Everything here is already shaped for a real deployment — the
-backend's an Express app that drops into Lambda behind API Gateway
-unchanged, the data layer is already keyed like a DynamoDB table
-(facilityId as partition key), and the Angular build is already static
-files for S3+CloudFront. We verified real AWS access this session and
-could deploy this, we chose not to for the pitch itself — zero
-cold-start/network risk during a timed demo, with no judging upside
-since code quality isn't scored." (See `docs/project-scope.md` section
-6 for the full table if asked for specifics.)
+> "This runs locally for the demo by deliberate choice, not because it
+> can't be hosted. Every piece is already shaped for a direct AWS
+> deployment with no redesign:
+> - The backend is a plain Express app -- drops into Lambda behind API
+>   Gateway via `serverless-express` with no handler rewrites.
+> - The data layer is already keyed exactly like a DynamoDB single-
+>   table design (facilityId as the partition key) -- confirmed this
+>   session when two brand-new facilities in new states were added
+>   with zero code changes, only data.
+> - The Angular build is already static files -- S3 + CloudFront, no
+>   application changes.
+> - We confirmed real, working AWS credentials for a provided workshop
+>   account this session (`aws sts get-caller-identity` succeeded with
+>   admin access) -- a real deployment is genuinely available, not
+>   theoretical.
+>
+> We chose not to deploy for the pitch itself because a timed live demo
+> has real cold-start and network risk with zero judging upside, since
+> code quality isn't part of the scoring criteria -- that risk only
+> matters during a live demo, not in a recorded walkthrough or in this
+> written submission. The full migration plan, mapped piece-by-piece,
+> is documented in the project's `docs/project-scope.md` (section 6) if
+> judges want the specifics."
 
-## Known gaps, if asked directly (don't volunteer, answer honestly if asked)
-- No real email/SMS dispatch yet — notifications are drafted, channel-
-  routed, and fully logged, but sending is simulated-and-recorded, not
-  wired to SNS/SES yet.
-- Essential personnel who are on approved leave/detail elsewhere today
-  still get notified with no distinction from "essential and expected
-  to report" — a known, documented limitation, not something we tried
-  to hide.
-- No auth — explicit scope cut for a local demo; a real deployment
-  needs Cognito/IAM in front of it.
+Full reference table (pull from `project-scope.md` section 6 if you
+want to paste the actual table into the submission): Express->Lambda+
+API Gateway, repository layer->DynamoDB, decision/notification logs->
+DynamoDB tables, facility-links->DynamoDB item, Angular build->S3+
+CloudFront, `.env` token->Secrets Manager, localhost URLs->real domain
+names. Suggested order: DynamoDB tables first (zero risk, parallel to
+the still-working local version), then Lambda+API Gateway, then S3+
+CloudFront, then real SNS/SES dispatch last (the one genuinely new
+capability, not just a deploy-target swap).
+
+### 5. Known limitations (~1-2 min — state proactively, don't bury)
+- No real email/SMS dispatch yet -- notifications are drafted,
+  channel-routed, and fully logged, but sending is simulated/recorded,
+  not wired to SNS/SES. Documented as the natural next deployment step.
+- Essential personnel on approved leave/detail elsewhere today still
+  get notified with no distinction from "essential and expected to
+  report" -- a known, honest limitation, not hidden.
+- No auth -- explicit scope cut for a local demo; a real deployment
+  needs Cognito/IAM in front of it before public exposure.
+
+### 6. Close (~1 min)
+Restate the two things most teams skip per the challenge's own text:
+the decision record (full before/after/override audit trail) and
+threshold defensibility (every number traces to an official source --
+CAP spec, EPA AQI breakpoints, state DOT's own published legend, NWS's
+own flood category). Both are fully built, not placeholders.
 
 ## Facility cheat sheet (what each one proves)
 
@@ -98,12 +146,22 @@ since code quality isn't scored." (See `docs/project-scope.md` section
 | Pendleton | OR | Freeze Warning | Added live this session — third distinct hazard type, zero code changes. |
 | Alabama | AL | — | Zero employees seeded on purpose — proves empty-roster UI doesn't break. |
 
-## Quick recovery lines if live data is uncooperative during the pitch
-- If Clinton's flood has cleared: check Great Falls or pull up
-  `curl https://api.weather.gov/alerts/active | ...` quickly to find
-  whatever's active nationwide right now and switch to a facility near
-  it live — this is itself a good demo moment ("there's always
-  something active somewhere, let's find it right now").
+## For the LIVE demo later this morning (separate from this written
+## submission — same product, shorter window)
+Expect ~3 minutes including questions. Compress to: live data +
+recommendation (Clinton), one quick scroll through notification +
+decision record, and the San Diego/Pendleton generalization line if
+asked "is this just hardcoded." Keep the architecture explanation to
+one sentence unless directly asked -- the written submission already
+covers it in depth, the live slot doesn't have time for the full
+version.
+
+## Quick recovery lines if live data is uncooperative
+- If Clinton's flood has cleared by then: switch to whichever facility
+  currently has something active, or check
+  `curl https://api.weather.gov/alerts/active` quickly to find
+  something nationwide and point the picker there live -- itself a
+  good demo moment ("there's always something active somewhere").
 - If a source times out: the red "data source failure" banner and
-  Status Unknown posture are themselves a feature to point at — "we
+  Status Unknown posture are themselves a feature to point at -- "we
   don't silently show green when we can't actually confirm it."
