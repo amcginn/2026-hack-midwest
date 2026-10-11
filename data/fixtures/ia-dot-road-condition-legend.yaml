@@ -1,0 +1,63 @@
+source: https://services.arcgis.com/8lRhdTsQyJpO52F1/arcgis/rest/services/511_IA_Road_Conditions_View/FeatureServer/0
+serviceTitle: Iowa 511 Winter Road Conditions
+activeSeason: Oct 15 - Apr 15 (confirmed via item metadata)
+legend_from_drawingInfo_renderer:
+- value: Impassable
+  symbol:
+    color:
+    - 255
+    - 0
+    - 0
+    - 255
+    width: 1.5
+    type: esriSLS
+    style: esriSLSSolid
+  label: Impassable
+- value: Travel Not Advised
+  symbol:
+    color:
+    - 102
+    - 0
+    - 153
+    - 255
+    width: 1.5
+    type: esriSLS
+    style: esriSLSSolid
+  label: Travel Not Advised
+- value: Completely Covered
+  symbol:
+    color:
+    - 255
+    - 51
+    - 204
+    - 255
+    width: 1.5
+    type: esriSLS
+    style: esriSLSSolid
+  label: Completely Covered
+- value: Partially Covered
+  symbol:
+    color:
+    - 0
+    - 153
+    - 255
+    - 255
+    width: 1.5
+    type: esriSLS
+    style: esriSLSSolid
+  label: Partially Covered
+- value: Seasonal
+  symbol:
+    color:
+    - 153
+    - 204
+    - 102
+    - 255
+    width: 1.5
+    type: esriSLS
+    style: esriSLSSolid
+  label: Seasonal
+note: ROAD_CONDITION (string) legend confirmed via map renderer uniqueValueInfos,
+  ordered worst-to-normal by map symbology convention (red->green). Numeric ROAD_CONDITION_CODE
+  pairing with these string values not independently confirmed beyond Seasonal=10
+  observed live.

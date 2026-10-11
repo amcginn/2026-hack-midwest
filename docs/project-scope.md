@@ -487,12 +487,17 @@ each person's individual travel risk.
 - [ ] None blocking — section locked pending section 2/3 scoring table,
       which may reveal we want additional facility fields (e.g. flood-plain
       proximity) as a modifier input later.
-- [ ] Iowa CARS511 `ROAD_CONDITION_CODE` scale: only observed value so far
-      is `10` ("Seasonal" = normal). No domain/legend exposed via the API.
-      Need to either find CARS511 public documentation for the full code
-      scale, or infer by watching the feed during a known-bad-weather
-      window (not guaranteed to happen live during the remaining hours) —
-      do not fabricate a scale without a source.
+- [x] **Resolved 2026-10-11**: Iowa DOT `ROAD_CONDITION` legend found via
+      the MapServer layer's `drawingInfo.renderer.uniqueValueInfos` — the
+      same symbology ArcGIS uses to color the map is a complete,
+      authoritative 5-state legend: Impassable, Travel Not Advised,
+      Completely Covered, Partially Covered, Seasonal (normal baseline).
+      Ordered worst-to-normal by the map's own red->green convention.
+      Captured in `data/fixtures/ia-dot-road-condition-legend.yaml`. Used
+      the **string** `ROAD_CONDITION` field for this mapping rather than
+      the numeric `ROAD_CONDITION_CODE`, since the code-to-string pairing
+      beyond `Seasonal=10` was never independently confirmed — scoring
+      off the string value sidesteps that gap entirely.
 
 ---
 
@@ -563,11 +568,71 @@ needs a defined behavior for this case, not just a scoring table for the
 > Each evaluator returns a structured result: source, signal, severity,
 > certainty, urgency, postureScore, threshold, timestamp, rawRef.
 
-### Findings
+### Findings (2026-10-11)
 
-(none yet — pending scoring table work)
+Pulled the **official CAP (Common Alerting Protocol) enumeration
+definitions** for severity/certainty/urgency (via Google's public CAP
+requirements docs, which mirror the OASIS CAP v1.2 spec NWS implements):
 
-### Resolved Design
+- **Severity**: Extreme = "extraordinary threat to life or property",
+  Severe = "significant threat", Moderate = "possible threat", Minor =
+  "minimal threat". This is a direct graded threat scale — maps cleanly
+  to a 1-4 base score.
+- **Certainty**: Observed = "event either occurred or is ongoing", Likely
+  = "likely to occur, approximate probability >50%", Possible =
+  "possible but not likely, probability <=50%", Unlikely = "not expected
+  to occur, probability ~0%". **This is the key defensibility find**:
+  certainty isn't just a vague confidence label, it has defined
+  probability bands we can cite directly.
+- **Urgency**: Immediate = "take responsive action immediately", Expected
+  = "take action soon (within the next hour)", Future = "take action in
+  the near future", Past = "no longer required". Urgency is about
+  *timing* of required action, not threat magnitude — using it to
+  directly rescale the severity score would double-count timing that's
+  often already implicit in how severe/certain an alert is. Decision:
+  urgency does not rescale the posture score; it informs the
+  `whatWouldChange`/timing framing in the rationale text instead (e.g.
+  distinguishing "act now" from "on the radar, not yet actionable").
+
+### Resolved Design — NWS scoring formula
+
+Rather than a hand-authored 4x4x4 lookup table (64 cells, hard to
+individually defend), the score is a **formula built directly from the
+official CAP definitions**:
+
+```
+severityBase =  Extreme: 4 | Severe: 3 | Moderate: 2 | Minor: 1 | Unknown: insufficient_data
+
+certaintyModifier =
+  Observed: 1.0   (CAP: "occurred or is ongoing" - full weight)
+  Likely:   0.85  (CAP: >50% probability - high confidence)
+  Possible: 0.5   (CAP: <=50% probability - meaningful but hedged)
+  Unlikely: 0.1   (CAP: ~0% probability - near-zeroed, alert still surfaced)
+  Unknown:  insufficient_data
+
+postureScore = clamp(severityBase * certaintyModifier, 0, 4)
+```
+
+If either `severity` or `certainty` is `Unknown`, the outcome's `status`
+is `insufficient_data` (section 2), not a computed score — this is also
+exactly the Air Quality Alert case found during data-source
+investigation (`Unknown/Unknown/Unknown`).
+
+**Validated against real captured fixtures** (`data/fixtures/`), not
+hypothetical cases:
+
+| Scenario | Severity | Certainty | Score | Posture band |
+|---|---|---|---|---|
+| Flood Warning, Clinton IA (live, current) | Severe | Observed | **3.0** | Telework/Unscheduled Leave |
+| Winter Storm Warning, Montana (live, earlier) | Severe | Likely | **2.55** | Early Dismissal/Telework boundary |
+| Tornado Warning, SC (observed live, since cleared) | Extreme | Observed | **4.0** | Closure |
+| Tropical Storm Watch, San Diego (live, via NWS alerts) | Severe | Possible | **1.5** | Delay |
+
+This gives a correctly graded result: the "Watch" (lower certainty, not
+yet happening) lands at Delay, not Closure, even though its *severity*
+label is the same "Severe" as our Flood Warning — this is precisely the
+"upcoming but yet unknown" distinction raised earlier in scoping, now
+backed by real numbers instead of a qualitative description.
 
 ```json
 {
@@ -577,8 +642,8 @@ needs a defined behavior for this case, not just a scoring table for the
   "certainty": "Observed",
   "urgency": "Immediate",
   "status": "scored",
-  "postureScore": 4,
-  "threshold": "Severe+Observed -> score 4",
+  "postureScore": 3.0,
+  "threshold": "severityBase(Severe=3) x certaintyModifier(Observed=1.0) = 3.0",
   "timestamp": "2026-10-10T09:00:00Z",
   "rawRef": "<alert id/url>"
 }
@@ -602,8 +667,19 @@ Insufficient-data variant (e.g. Air Quality Alert with Unknown fields):
 ```
 
 ### Open Questions
-- [ ] Finalize scoring table (severity x certainty x urgency -> 0-4)
-- [ ] Decide if urgency affects score directly or only confidence/timing language
+- [x] **Resolved 2026-10-11**: scoring formula built from official CAP
+      definitions (severityBase x certaintyModifier), validated against
+      real fixtures, see Resolved Design above.
+- [x] **Resolved 2026-10-11**: urgency informs timing/rationale text, not
+      the numeric score directly (avoids double-counting timing that's
+      often already implicit in severity/certainty).
+- [ ] NHC intensity (kt) -> 0-4 conversion still not finalized (stretch
+      scenario only, lower priority given time remaining)
+- [ ] USGS gauge height ratio-to-flood-stage conversion still not
+      finalized as an exact formula (flood stage value is known — 11.0 ft
+      at the Clinton gauge, from the live warning text — but the
+      ratio-to-score curve itself needs the same treatment this section
+      just got for NWS)
 
 ---
 
@@ -651,7 +727,7 @@ school closings) don't get a numeric weight at all.
 | NWS Alerts | severity × certainty × urgency | categorical lookup table (section 3) | 1.0 | Primary (explicitly named in challenge text) |
 | USGS gauge height | feet | ratio to published flood stage (e.g. 11.0 ft at the Clinton gauge, taken directly from the live flood warning's own text) | 0.5 | Supplemental |
 | AQICN | AQI index (0-500) | EPA's own published AQI category breakpoints (Good/Moderate/USG/Unhealthy/Very Unhealthy/Hazardous) mapped onto 0-4 | 0.4 | Supplemental |
-| Iowa DOT road conditions | `ROAD_CONDITION_CODE` (small int) | pending — scale undocumented, see Open Questions | 0.4 (once resolved) | Supplemental |
+| Iowa DOT road conditions | `ROAD_CONDITION` (string, legend resolved 2026-10-11) | ordered 5-state legend from map renderer: Seasonal(normal)=0, Partially Covered=1, Completely Covered=2, Travel Not Advised=3, Impassable=4 | 0.4 | Supplemental |
 | NHC storm track | intensity (kt) | Saffir-Simpson-adjacent bucketing | 0.3 | Supplemental (stretch-only facility) |
 | GA 511 alerts | free text | **not scored** | 0 | Narrative-only |
 | KDKD school closings (Clinton, IA) | free text / closing-type list | **not scored** | 0 | Narrative-only, custom per-facility source (see below) |
@@ -974,3 +1050,36 @@ pressure later.
   back to the earlier "absence is not evidence of normalcy" principle.
   Weights set: NWS 1.0, USGS 0.5, AQICN 0.4, Iowa DOT 0.4 (pending scale
   docs), NHC 0.3, GA 511/KDKD 0 (narrative-only). Documented in section 4.
+- **2026-10-11**: Resolved the Iowa DOT road-condition scale open
+  question. User supplied the ArcGIS Hub "about" page; the page itself
+  was JS-rendered and not fetchable, but following the dataset back to
+  its underlying FeatureServer and checking the **MapServer layer's
+  `drawingInfo.renderer`** revealed a complete, authoritative 5-state
+  legend (the same categories/ordering ArcGIS uses to color the live
+  map): Impassable, Travel Not Advised, Completely Covered, Partially
+  Covered, Seasonal. Confirmed service is formally titled "Iowa 511
+  Winter Road Conditions," active Oct 15-Apr 15 (today, Oct 11, is right
+  at the edge of that window). Scoring uses the **string** field
+  (`ROAD_CONDITION`) rather than the numeric code, since only
+  `Seasonal=10` was ever confirmed live and the full code-to-string
+  pairing wasn't independently verified — scoring off the string avoids
+  guessing at the numeric mapping. Weight finalized at 0.4 in section 4's
+  table (no longer "pending").
+- **2026-10-11**: Resolved section 3's NWS scoring table. Found and used
+  the official CAP (Common Alerting Protocol) enumeration definitions for
+  severity/certainty/urgency (OASIS CAP v1.2 spec, mirrored on Google's
+  public CAP requirements docs) rather than inventing a 4x4x4 lookup
+  table by hand. Severity maps directly to a 1-4 base score (its CAP
+  definitions are already a graded threat scale). Certainty's CAP
+  definitions include actual probability bands (Likely = >50%, Possible
+  = <=50%) which became a defensible multiplicative modifier (Observed
+  1.0, Likely 0.85, Possible 0.5, Unlikely 0.1). Urgency's CAP definition
+  is about timing of required action, not threat magnitude, so it does
+  NOT rescale the score — it feeds the rationale/timing language instead,
+  avoiding double-counting. Validated the formula against all 4 real
+  NWS scenarios captured in `data/fixtures/` (Iowa flood -> 3.0, Montana
+  winter storm -> 2.55, SC tornado (historical) -> 4.0, San Diego
+  tropical storm watch -> 1.5) — results land in intuitively correct
+  posture bands, including correctly placing a low-certainty "Watch" well
+  below a "Warning" of the same severity label, which directly reflects
+  the "upcoming but yet unknown" distinction raised earlier in scoping.
