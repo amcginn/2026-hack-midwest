@@ -72,12 +72,11 @@
         Facility Roster &amp; Today's Schedule ({{ roster?.rosterCount ?? '…' }})
       </h3>
       <p class="hint">
-        Everyone normally based at this facility, and today's status — shows the distinction
-        the challenge calls out directly: the employee roster and who's actually affected
-        today are frequently not the same list.
+        Everyone normally based at this facility, and their status for today. The building
+        roster and who's actually present or reachable right now are often not the same list.
       </p>
       @if (roster && roster.rosterCount === 0) {
-        <p class="muted">No employees are seeded for this facility in the demo dataset.</p>
+        <p class="muted">No employees are currently assigned to this facility.</p>
       } @else if (roster) {
         <table>
           <thead>
