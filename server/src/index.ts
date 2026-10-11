@@ -37,31 +37,27 @@ app.get("/api/sources/nws", async (req: Request, res: Response) => {
 });
 
 /**
- * Second integration slice: live USGS gauge height.
+ * Second integration slice: live river gauge data via NOAA's NWPS API.
  *
- * Example: GET /api/sources/usgs?siteId=05420500&floodStageFt=11.0
- * (Mississippi River at Clinton, IA; flood stage per the live NWS
- * Flood Warning text captured during scoping)
+ * Example: GET /api/sources/usgs?lid=CMMI4
+ * (Mississippi River at Camanche/Clinton, IA -- NWPS location ID,
+ * confirmed to map to the same USGS site 05420500 we were querying
+ * directly before)
  */
 app.get("/api/sources/usgs", async (req: Request, res: Response) => {
-  const siteId = typeof req.query.siteId === "string" ? req.query.siteId : undefined;
-  const floodStageRaw = req.query.floodStageFt;
-  const floodStageFt =
-    floodStageRaw !== undefined && !Number.isNaN(Number(floodStageRaw))
-      ? Number(floodStageRaw)
-      : undefined;
+  const lid = typeof req.query.lid === "string" ? req.query.lid : undefined;
 
-  if (!siteId) {
-    res.status(400).json({ error: "siteId query param is required" });
+  if (!lid) {
+    res.status(400).json({ error: "lid query param is required (NWPS location ID, e.g. CMMI4)" });
     return;
   }
 
   try {
-    const outcome = await evaluateUsgsGaugeHeight(siteId, floodStageFt);
-    res.json({ siteId, floodStageFt: floodStageFt ?? null, outcome });
+    const outcome = await evaluateUsgsGaugeHeight(lid);
+    res.json({ lid, outcome });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    res.status(502).json({ error: "USGS lookup failed", detail: message });
+    res.status(502).json({ error: "River gauge lookup failed", detail: message });
   }
 });
 

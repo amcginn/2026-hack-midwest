@@ -1451,13 +1451,44 @@ pressure later.
   all USDA facilities" — 5-6 seeded facilities across a few states, not
   comprehensive coverage. No authn/z, explicitly out of scope for the POC.
 - **2026-10-11**: Flagged (per user request) that USGS gauge height has
-  no native flood-stage field -- the adapter requires a caller-supplied
-  reference, currently untested beyond manual query params. Checked
-  briefly whether NWS's NWPS river-forecast API
-  (`api.water.noaa.gov/nwps/v1/gauges/{id}`) could supply this
-  authoritatively; endpoint appears real (structured error on a bad ID)
-  but the gauge-search path timed out and wasn't pursued further to
-  avoid losing build time on an unconfirmed path. Decision deferred to
-  when the facility repository is built: default to hardcoding a
-  flood-stage reference in the synthetic Iowa facility record unless
-  there's time to properly wire the NWPS lookup.
+  no native flood-stage field. Followed up by checking NWS's NWPS API
+  docs (`water.noaa.gov/about/api`) and finding the correct gauge ID
+  pattern -- NWPS uses short alphanumeric location IDs ("lid"), not
+  USGS's numeric site IDs. Found the actual lid for our Clinton, IA site
+  (`CMMI4` = "Mississippi River at Camanche") via web search, confirmed
+  it maps to `usgsId: 05420500` -- **the exact same USGS site we're
+  already using.** `GET api.water.noaa.gov/nwps/v1/gauges/cmmi4`
+  (confirmed live, no key) returns:
+  - An NWS-computed `status.observed.floodCategory` field (currently
+    `"no_flooding"`) -- categorical, authoritative, directly scorable,
+    no ratio math needed if we use this instead of/alongside the raw
+    ratio approach.
+  - The **actual official flood-stage thresholds** for this gauge:
+    action=16ft, minor=17ft, moderate=18.5ft, major=20.5ft.
+  - **This corrects a real error**: the "11.0 ft" flood stage used in
+    `usgsScoring.ts` testing was pulled from the Flood Warning's free
+    text, which references a *different* waterway ("Wapsipinicon River
+    near De Witt"), not the Mississippi River gauge we're actually
+    scoring. The correct action-stage threshold for this gauge is 16 ft,
+    not 11 ft -- our test case (9.86 ft) is well below even the
+    "action" threshold at this gauge, not sitting near a flood boundary
+    as the earlier (wrong) reference implied.
+  - Captured as `data/fixtures/nwps-gauge-cmmi4-clinton-ia.yaml`.
+  - **Resolved**: USGS adapter will be updated to use this NWPS endpoint
+    as the authoritative flood-stage source (option (b) from the earlier
+    flagged list), rather than a hardcoded/caller-supplied guess. Thresholds
+    sourced live from NWS, not fabricated.
+- **2026-10-11**: Rewrote the USGS/river-gauge adapter to query NWS's
+  NWPS API directly (`api.water.noaa.gov/nwps/v1/gauges/{lid}`) instead
+  of raw USGS gauge height + a guessed flood-stage reference. NWPS
+  returns the same underlying reading (confirmed `usgsId` field matches
+  our original site 05420500) plus NWS's own computed `floodCategory`
+  and the gauge's real official thresholds (action=16/minor=17/
+  moderate=18.5/major=20.5 ft for this gauge). Added two scoring
+  functions: `scoreByFloodCategory` (preferred, authoritative) and
+  `scoreByThresholds` (fallback if category is missing but thresholds
+  exist). Re-verified live: current reading (9.86 ft) now correctly
+  scores 0/"no flooding" against the right thresholds, versus the
+  earlier incorrect ~90%-of-wrong-river's-flood-stage result. Route
+  signature changed from `siteId`+`floodStageFt` to `lid` (NWPS location
+  ID) since NWPS supplies both the reading and thresholds in one call.
