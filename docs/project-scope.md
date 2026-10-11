@@ -1807,3 +1807,31 @@ pressure later.
   NWS CAP scoring formula (section 3) and the challenge calls them out
   by name. Also added a human-readable "last updated" timestamp to
   every source card (government and supplemental).
+- **2026-10-11**: User manual-testing pass surfaced four real issues.
+  (1) **Decision record spam**: every dashboard page view/refresh calls
+  `/evaluate`, which was persisting a new record every time -- found
+  live with 8-9 near-identical records seconds apart during one viewing
+  session, defeating the point of a trustworthy audit trail. Fixed with
+  a dedup rule in `appendDecisionRecord`: skip persisting if the most
+  recent record for the same facility has the same posture/score/
+  governmentSourceErrored state AND was recorded within 5 minutes. A
+  genuinely changed condition is never deduplicated regardless of
+  timing. (2) **Decision log stale-state bug**: switching facilities
+  didn't clear the previous facility's records/expanded-row state
+  before the new fetch resolved -- fixed by explicitly resetting both
+  on facility change. (3) **Misleading column label**: "Affected Today"
+  on the roster table was confusing against a facility with zero active
+  alerts (Montana's one employee showed "✓ Yes" with nothing to point
+  to) -- the column actually means "would be notified/is in the
+  applicable set," not "is currently affected by a hazard." Renamed to
+  "Would Be Notified" to match what's actually computed. (4) **Single-
+  facility-per-state**: added a second Iowa facility (Des Moines, USDA
+  FSA Iowa State Office) and second Montana facility (Great Falls --
+  one of the offices actively issuing Winter Storm Warnings during
+  original data-source scoping, a thematically fitting choice), each
+  with 2 seeded employees, so the state/office picker demonstrates real
+  multi-facility browsing rather than one facility per state looking
+  like a dead-end dropdown. Verified all four fixes live: dedup
+  (3 identical calls -> 1 record), decision log clearing on facility
+  switch, new facilities' real NWS/roster data, and the relabeled
+  column.
