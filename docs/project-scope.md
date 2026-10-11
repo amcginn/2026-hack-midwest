@@ -1505,3 +1505,24 @@ pressure later.
   separately look up an NWPS-specific lid. Captured a trimmed summary of
   the gauges-related paths from the real spec as
   `data/fixtures/nwps-swagger-summary.yaml`.
+- **2026-10-11**: Added AQICN source adapter following the same hardened
+  pattern (timeout, response-shape checks, graceful absent/
+  insufficient_data handling). Confirmed the EPA 2016 AQI breakpoint
+  scale directly from aqicn.org/scale/ (our actual provider, which
+  explicitly implements this standard) and cross-checked against airnow.
+  gov -- 6 EPA categories (Good/Moderate/USG/Unhealthy/Very Unhealthy/
+  Hazardous) mapped onto the 0-4 posture scale, with Very Unhealthy and
+  Hazardous both landing at 4 (defensible: both are already
+  emergency-level in EPA's own language). Validated all boundary values
+  plus the real Clinton, IA fixture (AQI 64 -> Moderate -> 1).
+  Found and fixed two real bugs during live testing, not hypothetical:
+  (1) `.env` lives at the project root, not inside `server/` -- dotenv's
+  default lookup missed it entirely, token silently read as undefined.
+  Fixed by loading `.env` with an explicit resolved path.
+  (2) AQICN's nearest-station geo lookup has **no distance cutoff** --
+  confirmed live that querying lat=0,lon=0 (middle of the ocean) still
+  returned a real station answer, from South Africa, ~3974km away,
+  rather than "no station nearby." Added a haversine distance check
+  (reject matches beyond 100km) using the station's own returned
+  coordinates, re-verified both the rejection case and that real
+  Iowa/Montana facilities still score correctly.

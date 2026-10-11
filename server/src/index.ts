@@ -1,7 +1,15 @@
-import "dotenv/config";
+import path from "node:path";
+import dotenv from "dotenv";
 import express, { type Request, type Response } from "express";
+
+// .env lives at the project root (2026-hack-midwest/.env), not inside
+// server/ -- shared across server/cdk/ui per docs/project-scope.md's
+// Credentials & Secrets section. Loaded explicitly rather than relying
+// on dotenv's default cwd-relative lookup.
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { evaluateNwsAlerts } from "./sources/nws";
 import { evaluateUsgsGaugeHeight } from "./sources/usgs";
+import { evaluateAqicn } from "./sources/aqicn";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
@@ -61,6 +69,29 @@ app.get("/api/sources/usgs", async (req: Request, res: Response) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     res.status(502).json({ error: "River gauge lookup failed", detail: message });
+  }
+});
+
+/**
+ * Third integration slice: live AQI via AQICN.
+ *
+ * Example: GET /api/sources/aqicn?lat=41.8847&lon=-90.1943 (Clinton, IA)
+ */
+app.get("/api/sources/aqicn", async (req: Request, res: Response) => {
+  const lat = Number(req.query.lat);
+  const lon = Number(req.query.lon);
+
+  if (Number.isNaN(lat) || Number.isNaN(lon)) {
+    res.status(400).json({ error: "lat and lon query params are required numbers" });
+    return;
+  }
+
+  try {
+    const outcome = await evaluateAqicn(lat, lon);
+    res.json({ lat, lon, outcome });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(502).json({ error: "AQICN lookup failed", detail: message });
   }
 });
 
