@@ -1275,6 +1275,62 @@ actually safe to expose beyond a demo, but that's a distinct piece of
 work from the migration itself and shouldn't block documenting the
 migration path.
 
+**Actually attempted this session (2026-10-11, post-submission), not
+just planned**: built and deployed the read-only API slice for real,
+not just sketched it. Extracted the Express `app` out of `index.ts`
+into `app.ts` (exported, no `.listen()` call) so the exact same app
+can run two ways with zero duplicated route logic: `index.ts` (local
+dev, unchanged behavior, still the default/working path) and
+`lambda.ts` (new, wraps `app` with `@vendia/serverless-express`).
+Built a deployment zip (`server/dist` + `node_modules` + `data/`,
+matching the exact relative-path structure `repository/dataPaths.ts`
+expects), created a real Lambda function via plain `aws lambda
+create-function` (no CDK, per user's call that it wasn't worth it for
+a one-off), and verified it end-to-end with a REAL live NWS call
+through `aws lambda invoke` -- correct posture, correct facility name,
+same result as the local server.
+
+**Finding: public/unauthenticated access is blocked at the AWS
+Organizations level in this specific Workshop Studio account; direct
+IAM-authenticated invocation is NOT blocked.** Precisely isolated via
+three real tests, not assumed:
+1. API Gateway (HTTP API, AWS_PROXY integration, correct resource-based
+   Lambda permission, confirmed-correct `SourceArn` condition) returned
+   a bare `500 Internal Server Error` on every request, with ZERO
+   corresponding log entries in CloudWatch (API Gateway access logs),
+   CloudWatch (Lambda logs), or CloudTrail (`Invoke` events) -- the
+   call never actually reached the function.
+2. A public Lambda Function URL (`AuthType: NONE`, explicit
+   `Principal: "*"` resource policy) returned a direct
+   `403 Forbidden: AccessDeniedException` from Lambda's own URL
+   front door, before even reaching the function.
+3. The SAME Function URL switched to `AuthType: AWS_IAM`, invoked with
+   a real SigV4-signed request (signed using the account's own
+   `WSParticipantRole` credentials via `botocore`), returned a correct
+   `200 OK` with real, live NWS data -- `aws iam simulate-principal-
+   policy` also confirmed no identity-based SCP blocks
+   `lambda:InvokeFunction` for this role.
+
+Conclusion: this account's guardrail specifically targets *public,
+unauthenticated* invocation paths (consistent with a shared training
+account preventing participants from standing up open internet
+endpoints) -- it is NOT a blanket restriction on Lambda hosting itself,
+and is not something fixable from within this participant account
+(confirmed we lack `organizations:DescribeOrganization` permission to
+even inspect the policy). A production AWS account without this
+specific guardrail would deploy exactly as planned above with no
+changes needed. The practical gap this leaves: a browser-based Angular
+UI can't SigV4-sign its own requests without real plumbing (a Cognito
+Identity Pool handing out temporary signable credentials, or a thin
+signing proxy) -- not attempted, since the demo/pitch was already
+submitted and recorded by this point and the finding itself (hosting
+works, only unauthenticated access is restricted) was the valuable
+thing to nail down, not a fully-wired browser-to-Lambda auth flow.
+
+All test resources (Lambda function, IAM role, API Gateway, Function
+URL configs) were created, tested, and fully deleted again after each
+test -- nothing left running in the account.
+
 ---
 
 ## 7. Challenge Requirements Checklist & Gap Tracker
