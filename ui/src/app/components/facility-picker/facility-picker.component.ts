@@ -62,7 +62,22 @@ export class FacilityPickerComponent implements OnInit {
     if (this.facilities.length === 0) return;
 
     const urlFacilityId = this.router.url.match(/\/facility\/([^/?#]+)/)?.[1];
-    if (!urlFacilityId || urlFacilityId === this.selectedFacilityId) return;
+
+    // Navigated away from any /facility/:id route (e.g. the header
+    // title link back to "/") -- clear the dropdowns so they don't
+    // keep showing a stale selection next to the root overview (found
+    // live, 2026-10-11: clicking the title link correctly navigated
+    // and showed the overview, but left both dropdowns populated,
+    // looking like a facility was still selected).
+    if (!urlFacilityId) {
+      if (this.selectedState || this.selectedFacilityId) {
+        this.selectedState = '';
+        this.selectedFacilityId = '';
+      }
+      return;
+    }
+
+    if (urlFacilityId === this.selectedFacilityId) return;
 
     const facility = this.facilities.find((f) => f.facilityId === urlFacilityId);
     if (!facility) return;

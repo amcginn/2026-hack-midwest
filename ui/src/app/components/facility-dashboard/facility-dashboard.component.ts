@@ -2,6 +2,7 @@ import { Component, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import {
   FacilityEvaluation,
@@ -261,23 +262,41 @@ export class FacilityDashboardComponent implements OnChanges {
     this.notifyingAll = true;
     this.notifyAllConfirmation = null;
 
-    this.api
-      .sendNotifications(this.facilityId, {
+    // Group recipients by their individually-selected channel (found
+    // live: this previously always sent "email" for every recipient,
+    // silently ignoring each row's own channel dropdown). The server
+    // route takes one channel per request, so "Notify All" issues one
+    // request per distinct channel actually selected, rather than
+    // changing the server's request contract under time pressure.
+    const recipients = this.evaluation.notification.recipients;
+    const groups = new Map<NotificationChannel, string[]>();
+    for (const r of recipients) {
+      const channel: NotificationChannel = this.recipientChannel[r.employeeId] ?? 'email';
+      const ids = groups.get(channel) ?? [];
+      ids.push(r.employeeId);
+      groups.set(channel, ids);
+    }
+
+    const requests = Array.from(groups.entries()).map(([channel, employeeIds]) =>
+      this.api.sendNotifications(this.facilityId!, {
         date: this.decisionDate || undefined,
-        notifyAll: true,
-        channel: 'email',
-      })
-      .subscribe({
-        next: (res) => {
-          this.notifyingAll = false;
-          this.notifyAllConfirmation = `Notified ${res.count} recipient${res.count === 1 ? '' : 's'} via email at ${new Date().toLocaleTimeString()}.`;
-          this.decisionLog?.loadNotificationLog();
-        },
-        error: (err) => {
-          this.notifyingAll = false;
-          console.error('Could not send bulk notification', err);
-        },
-      });
+        employeeIds,
+        channel,
+      }),
+    );
+
+    forkJoin(requests).subscribe({
+      next: (results) => {
+        this.notifyingAll = false;
+        const totalCount = results.reduce((sum, res) => sum + res.count, 0);
+        this.notifyAllConfirmation = `Notified ${totalCount} recipient${totalCount === 1 ? '' : 's'} at ${new Date().toLocaleTimeString()} (channel per recipient's selection).`;
+        this.decisionLog?.loadNotificationLog();
+      },
+      error: (err) => {
+        this.notifyingAll = false;
+        console.error('Could not send bulk notification', err);
+      },
+    });
   }
 
   /** Drafted message text for the copy/paste preview box -- per user
