@@ -1835,3 +1835,40 @@ pressure later.
   (3 identical calls -> 1 record), decision log clearing on facility
   switch, new facilities' real NWS/roster data, and the relabeled
   column.
+- **2026-10-11**: User identified that the dedup-on-timing fix from the
+  previous round was treating the wrong symptom. The real issue:
+  viewing/refreshing the dashboard should never be conflated with
+  making a decision at all, regardless of dedup windows. **Redesigned**:
+  `GET /evaluate` is now purely read-only, persists nothing. Added
+  `POST /api/facilities/:id/decisions` as the ONLY route that writes a
+  decision record -- it re-runs a fresh evaluation at the moment of
+  the explicit action (not reusing stale client state), and accepts an
+  optional `decidedPosture` override plus `decidedBy`/`notes`. This
+  directly implements the challenge's explicit framing ("the goal is
+  not to automate the decision") as a real, auditable mechanic: the
+  system recommends, a human can confirm or override, and the record
+  captures `recommendedPosture` vs. the actually-`posture` decided plus
+  a `wasOverridden` flag -- an override is a first-class case, not an
+  edge case. Removed the now-unneeded dedup logic entirely (explicit
+  actions never need deduplicating). Added a "Record This Decision" UI
+  control (posture override dropdown, decided-by, notes, confirm
+  button) to the dashboard. Verified live: plain GET /evaluate persists
+  nothing (0 records), POST /decisions persists correctly including a
+  deliberate-override test case (`wasOverridden: true`, both postures
+  preserved).
+- **2026-10-11**: User flagged that "no official government source
+  available" needs the same visual prominence we already gave to the
+  "source errored" case -- both are "important decision data are
+  missing," just for different reasons (one's a system failure, one's
+  a legitimate "checked, nothing active"). Added a distinct
+  `noGovernmentDataAvailable` flag to the `/evaluate` response and a
+  new amber/informational banner (deliberately different styling from
+  the red error banner -- this isn't a failure) rendered above the
+  posture header whenever it's true. Verified live: Des Moines (no
+  active NWS alert right now) correctly flags true; Clinton (active
+  flood warning) correctly flags false.
+- **2026-10-11**: Fixed awkward roster label wording flagged by
+  screenshot review -- "In office today (exception)" paired with a
+  schedule note that already explains the exception read redundant.
+  Simplified the label to "In office today," letting the note alone
+  carry the "why."
