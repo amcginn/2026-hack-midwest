@@ -30,7 +30,7 @@ export function buildRationale(
   }
 
   if (!drivingSource) {
-    return `NWS was checked for ${facilityName} and has no active alert for this area right now. **Normal Operations** are recommended, but "no alert issued" is not the same as NWS actively certifying conditions are safe — continue monitoring, and review the supplemental readings below for additional context.`;
+    return `NWS was checked for ${facilityName} and has no active alert for this area right now. **Normal Operations** are recommended — continue monitoring, and review the supplemental readings below for additional context.`;
   }
 
   const postureLabel = POSTURE_LABELS[posture];
