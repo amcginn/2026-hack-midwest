@@ -11,6 +11,38 @@ See `docs/project-scope.md` for the full design history/decision log,
 `docs/demo-script.md` for a pitch walkthrough, and `docs/roadmap.md`
 for future-enhancement ideas.
 
+## Two builds of this app exist
+
+**1. Client/server (full-featured)** — the primary build, described
+in "Quick start" below. An Express backend talks to all four live data
+sources (including AQICN, which needs an API token kept server-side)
+and persists decision records/notification logs/facility links to
+files on disk. Run locally; not currently deployed anywhere public.
+
+**2. Standalone (self-contained, no backend)** — a parallel build
+that calls NWS, USGS/NOAA river gauges, and Iowa DOT directly from the
+browser, with no server at all. Deployed to GitHub Pages:
+
+**https://amcginn.github.io/2026-hack-midwest/**
+
+This build intentionally does **not** include AQICN — its API token
+can't ship in client-side JavaScript without being readable by anyone
+who opens dev tools, so the credential stays server-side only. The
+AQICN card still appears on the dashboard, explaining that this is a
+real feature of the full build, just not wired up here (not an error
+or a missing-config state). Decision records, the notification log,
+and facility links persist to the browser's `localStorage` instead of
+server-side files, so they survive across sessions on the same
+browser but aren't shared across devices.
+
+Source for the standalone build lives under `ui/src/app/standalone/`
+(ported, not shared, from the server's evaluator/scoring/data-access
+logic — see that directory's module comments) and
+`ui/src/app/services/standalone-api.service.ts`. It's built via a
+separate Angular build configuration (`ng build --configuration
+standalone`) and deployed automatically on push to `main` by
+`.github/workflows/deploy-standalone.yml`.
+
 ## Quick start
 
 Two things to run, in two separate terminals, from the project root.
@@ -86,6 +118,9 @@ That's it — pick a state and office, see live data.
 ```
 server/        Express API (TypeScript). npm run dev to run locally.
 ui/            Angular app. npx ng serve to run locally.
+  src/app/standalone/   Self-contained (no-backend) port, used only by
+                         the `standalone` build config -- see "Two
+                         builds of this app exist" above.
 data/
   synthetic/   Hand-authored facility/employee/schedule seed data (YAML).
   fixtures/    Captured sample API responses from early data-source scoping.
@@ -100,9 +135,9 @@ docs/
 
 ## Live data sources (no mocking)
 
-| Source | Needs a key? | Scope |
-|---|---|---|
-| National Weather Service (NWS) | No | Every facility |
-| USGS / NOAA river gauges (via NWPS) | No | Facilities near a monitored river |
-| AQICN air quality | Yes (free, see above) | Facilities within range of a monitoring station |
-| Iowa DOT road conditions | No | Iowa facilities only |
+| Source | Needs a key? | Scope | In standalone build? |
+|---|---|---|---|
+| National Weather Service (NWS) | No | Every facility | Yes |
+| USGS / NOAA river gauges (via NWPS) | No | Facilities near a monitored river | Yes |
+| AQICN air quality | Yes (free, see above) | Facilities within range of a monitoring station | No — see "Two builds" above |
+| Iowa DOT road conditions | No | Iowa facilities only | Yes |
