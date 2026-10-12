@@ -138,10 +138,12 @@ export class FacilityDashboardComponent implements OnChanges {
         // does).
         this.decidedPostureOverride = res.posture;
 
-        // Default each recipient's channel to email, except fall back
-        // to SMS being unavailable (disabled in the template) when
-        // there's no short-form message for the current posture (e.g.
-        // "normal" has no urgent short form to send).
+        // Default each recipient's channel to email. SMS is disabled
+        // in the template only when shortFormMessage is genuinely
+        // null -- every posture (including "normal," added
+        // 2026-10-13) now has a real short form, so this fallback is
+        // effectively unreachable today but left in place for safety
+        // if a future posture is added without one.
         this.recipientChannel = {};
         for (const r of res.notification.recipients) {
           this.recipientChannel[r.employeeId] = 'email';

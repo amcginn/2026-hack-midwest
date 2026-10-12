@@ -55,17 +55,32 @@ function formatShortDate(isoDate: string): string {
 
 export interface NotificationMessages {
   /** Full email-length message. Always includes the facility name,
-   * posture, driving signal, and (for essential recipients) the
-   * unchanged-schedule line. */
+   * posture, driving signal, (for essential recipients) the
+   * unchanged-schedule line, and the accommodation-disclaimer line. */
   longForm: string;
-  /** SMS-length message. Only meaningfully different from longForm for
-   * time-urgent postures (delay/early_dismissal/telework/closure) --
-   * null for "normal", since there's no urgent action to compress into
-   * a text. */
+  /** SMS-length message. Every posture (including "normal," added
+   * 2026-10-13 per user -- "even a targeted individual message
+   * confirming the office is open today" is worth sending) now has a
+   * real short form. */
   shortForm: string | null;
 }
 
 const ESSENTIAL_LINE = "ESSENTIAL PERSONNEL: This does not change your schedule or reporting requirement.";
+
+/**
+ * Blanket disclaimer appended to every long-form message, regardless
+ * of posture or recipient -- per user, 2026-10-13: deliberately
+ * identical for everyone, not conditioned on any individual's
+ * accessibilityNotes field. Branching message content on a specific
+ * person's accommodation data would be the system "taking action" on
+ * that data, which Employee.accessibilityNotes is explicitly NOT
+ * supposed to drive (see server/src/repository/types.ts module doc).
+ * A universal reminder doesn't single anyone out or read as the
+ * system making any individual determination -- it just states a
+ * limitation of the recommendation itself, true for every reader.
+ */
+const ACCOMMODATION_DISCLAIMER_LINE =
+  "If you or someone you supervise has an accessibility or individual accommodation need affected by today's conditions, address that directly — this recommendation does not account for it.";
 
 /**
  * Build both message variants for one recipient.
@@ -97,10 +112,12 @@ export function buildNotificationMessages(
   switch (posture) {
     case "normal":
       return {
-        longForm:
-          `USDA Weather Facility Update — ${facilityName}\n\n` +
+        longForm: buildLongForm(
+          `USDA Weather Facility Update — ${facilityName}`,
           `${facilityName} is operating normally on ${longDate}. No weather-related closures or schedule changes are in effect. If your status changes, you will be notified.`,
-        shortForm: null,
+          essentialPersonnel,
+        ),
+        shortForm: `${facilityName}: Operating normally ${shortDate}. No closures or schedule changes in effect.`,
       };
 
     case "delay":
@@ -145,9 +162,11 @@ export function buildNotificationMessages(
 
     case "unknown":
       return {
-        longForm:
-          `USDA Weather Facility Update — ${facilityName} — Status Unknown\n\n` +
+        longForm: buildLongForm(
+          `USDA Weather Facility Update — ${facilityName} — Status Unknown`,
           `${facilityName}'s status could not be automatically determined for ${longDate}, because the primary weather data source could not be reached. Please check with your supervisor before heading in, and watch for a follow-up update.`,
+          essentialPersonnel,
+        ),
         shortForm: `${facilityName}: Status unknown ${shortDate} (data source issue). Check with your supervisor before heading in.`,
       };
   }
@@ -155,5 +174,5 @@ export function buildNotificationMessages(
 
 function buildLongForm(headerLine: string, bodyLine: string, essentialPersonnel: boolean): string {
   const essentialBlock = essentialPersonnel ? `\n\n${ESSENTIAL_LINE}` : "";
-  return `${headerLine}\n\n${bodyLine}${essentialBlock}`;
+  return `${headerLine}\n\n${bodyLine}${essentialBlock}\n\n${ACCOMMODATION_DISCLAIMER_LINE}`;
 }

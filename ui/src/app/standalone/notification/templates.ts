@@ -21,6 +21,12 @@ export interface NotificationMessages {
 
 const ESSENTIAL_LINE = "ESSENTIAL PERSONNEL: This does not change your schedule or reporting requirement.";
 
+/** See server/src/notification/templates.ts
+ * ACCOMMODATION_DISCLAIMER_LINE module doc -- identical, deliberately
+ * universal (not conditioned on any individual's accessibilityNotes). */
+const ACCOMMODATION_DISCLAIMER_LINE =
+  "If you or someone you supervise has an accessibility or individual accommodation need affected by today's conditions, address that directly — this recommendation does not account for it.";
+
 export function buildNotificationMessages(
   facilityName: string,
   posture: Posture,
@@ -35,10 +41,12 @@ export function buildNotificationMessages(
   switch (posture) {
     case "normal":
       return {
-        longForm:
-          `USDA Weather Facility Update — ${facilityName}\n\n` +
+        longForm: buildLongForm(
+          `USDA Weather Facility Update — ${facilityName}`,
           `${facilityName} is operating normally on ${longDate}. No weather-related closures or schedule changes are in effect. If your status changes, you will be notified.`,
-        shortForm: null,
+          essentialPersonnel,
+        ),
+        shortForm: `${facilityName}: Operating normally ${shortDate}. No closures or schedule changes in effect.`,
       };
 
     case "delay":
@@ -83,9 +91,11 @@ export function buildNotificationMessages(
 
     case "unknown":
       return {
-        longForm:
-          `USDA Weather Facility Update — ${facilityName} — Status Unknown\n\n` +
+        longForm: buildLongForm(
+          `USDA Weather Facility Update — ${facilityName} — Status Unknown`,
           `${facilityName}'s status could not be automatically determined for ${longDate}, because the primary weather data source could not be reached. Please check with your supervisor before heading in, and watch for a follow-up update.`,
+          essentialPersonnel,
+        ),
         shortForm: `${facilityName}: Status unknown ${shortDate} (data source issue). Check with your supervisor before heading in.`,
       };
   }
@@ -93,5 +103,5 @@ export function buildNotificationMessages(
 
 function buildLongForm(headerLine: string, bodyLine: string, essentialPersonnel: boolean): string {
   const essentialBlock = essentialPersonnel ? `\n\n${ESSENTIAL_LINE}` : "";
-  return `${headerLine}\n\n${bodyLine}${essentialBlock}`;
+  return `${headerLine}\n\n${bodyLine}${essentialBlock}\n\n${ACCOMMODATION_DISCLAIMER_LINE}`;
 }
