@@ -11,7 +11,7 @@
  */
 
 import { Injectable } from '@angular/core';
-import { Observable, from, of } from 'rxjs';
+import { Observable, from, of, throwError } from 'rxjs';
 import {
   Facility,
   FacilityEvaluation,
@@ -62,7 +62,7 @@ export class StandaloneApiService {
   getRoster(facilityId: string, date?: string): Observable<FacilityRoster> {
     const roster = getFacilityRoster(facilityId, date);
     if (!roster) {
-      throw new Error(`Unknown facilityId: ${facilityId}`);
+      return throwError(() => new Error(`Unknown facilityId: ${facilityId}`));
     }
     return of(roster);
   }
@@ -171,7 +171,7 @@ export class StandaloneApiService {
   getFacility(facilityId: string): Observable<Facility> {
     const facility = getFacilityById(facilityId);
     if (!facility) {
-      throw new Error(`Unknown facilityId: ${facilityId}`);
+      return throwError(() => new Error(`Unknown facilityId: ${facilityId}`));
     }
     return of(facility);
   }
@@ -185,10 +185,10 @@ export class StandaloneApiService {
     const trimmedUrl = url.trim();
 
     if (!trimmedLabel) {
-      throw new Error('label is required');
+      return throwError(() => new Error('label is required'));
     }
     if (!trimmedUrl || !isValidHttpUrl(trimmedUrl)) {
-      throw new Error('url must be a valid http:// or https:// URL');
+      return throwError(() => new Error('url must be a valid http:// or https:// URL'));
     }
 
     return of(writeFacilityLink(facilityId, trimmedLabel, trimmedUrl));
@@ -197,7 +197,7 @@ export class StandaloneApiService {
   removeFacilityLink(facilityId: string, linkId: string): Observable<void> {
     const removed = deleteFacilityLink(facilityId, linkId);
     if (!removed) {
-      throw new Error(`Unknown linkId: ${linkId}`);
+      return throwError(() => new Error(`Unknown linkId: ${linkId}`));
     }
     return of(undefined);
   }

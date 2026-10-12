@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FacilityDashboardComponent } from '../facility-dashboard/facility-dashboard.component';
+import { ApiService } from '../../services/api.service';
 
 /**
  * Route-level wrapper for /facility/:facilityId -- reads the facility
@@ -10,6 +11,15 @@ import { FacilityDashboardComponent } from '../facility-dashboard/facility-dashb
  * without a full component re-create) rather than from component
  * state, so a selected facility is a real, shareable/bookmarkable/
  * refreshable URL per the user's request.
+ *
+ * Unknown facility IDs (e.g. a stale bookmark, or a typo'd URL)
+ * redirect straight back to '/' rather than rendering a dedicated 404
+ * page -- not worth building out for this app's scope (per user,
+ * 2026-10-13). Checked via a lightweight getFacility() call rather
+ * than letting the dashboard's evaluate call fail into its generic
+ * error message, since that message doesn't distinguish "this
+ * facility doesn't exist" from "a live data source is down" and a
+ * silent redirect is a cleaner outcome for the former.
  */
 @Component({
   selector: 'app-facility-view',
@@ -21,9 +31,21 @@ import { FacilityDashboardComponent } from '../facility-dashboard/facility-dashb
 export class FacilityViewComponent {
   facilityId: string | null = null;
 
-  constructor(private route: ActivatedRoute) {
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private api: ApiService,
+  ) {
     this.route.paramMap.subscribe((params) => {
-      this.facilityId = params.get('facilityId');
+      const facilityId = params.get('facilityId');
+      this.api.getFacility(facilityId ?? '').subscribe({
+        next: () => {
+          this.facilityId = facilityId;
+        },
+        error: () => {
+          this.router.navigate(['/']);
+        },
+      });
     });
   }
 }
