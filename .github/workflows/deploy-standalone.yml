@@ -1,0 +1,73 @@
+name: Deploy standalone build to GitHub Pages
+
+# Builds the self-contained, no-backend Angular build (ui/, `standalone`
+# configuration -- see ui/angular.json) and publishes it to GitHub
+# Pages. This is the client/server-free build: it calls NWS, USGS/NWPS,
+# and Iowa DOT directly from the browser (all three confirmed to send
+# Access-Control-Allow-Origin: * -- see docs/project-scope.md section 6)
+# and omits AQICN entirely rather than ship its API token in client-side
+# JS (see ui/src/app/standalone/sources/aqicn.ts).
+#
+# This workflow does NOT touch, build, or deploy server/ -- the
+# client/server app is unaffected and kept fully intact for local use
+# or a future AWS deployment (see docs/project-scope.md section 6).
+#
+# One-time repo setup required (Settings -> Pages): set "Source" to
+# "GitHub Actions" (not "Deploy from a branch").
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ui/**'
+      - '.github/workflows/deploy-standalone.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ui
+
+      - name: Build standalone configuration
+        run: npx ng build --configuration standalone
+        working-directory: ui
+
+      - name: Add SPA fallback (404.html) for client-side routing
+        run: cp dist/ui/browser/index.html dist/ui/browser/404.html
+        working-directory: ui
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ui/dist/ui/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

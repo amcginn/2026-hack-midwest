@@ -29,7 +29,12 @@ export interface Facility {
   notes?: string;
 }
 
-export type SourceStatus = 'scored' | 'insufficient_data' | 'narrative' | 'absent';
+// 'not_included_in_this_build' only appears in the standalone (no-backend)
+// build's AQICN placeholder -- see ui/src/app/standalone/sources/aqicn.ts.
+// Added to the shared status union (not a standalone-only type) so this
+// model stays the single source of truth the UI's severity/icon logic
+// switches on, whichever build produced the data.
+export type SourceStatus = 'scored' | 'insufficient_data' | 'narrative' | 'absent' | 'not_included_in_this_build';
 export type SourceTier = 'government' | 'supplemental' | 'narrative';
 
 export interface SourceOutcome {
