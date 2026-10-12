@@ -268,7 +268,7 @@
           has no seeded employees, or everyone happens to be excluded today.
         </p>
       } @else if (evaluation.posture === 'normal' && !notifyPanelExpanded) {
-        <p class="muted">Nothing currently warrants notifying anyone.</p>
+        <p class="muted">Normal Operations — no notification is needed right now.</p>
         <details class="notify-expand" (toggle)="notifyPanelExpanded = true">
           <summary>Notify anyway (e.g. a power outage or other issue outside the tracked data sources)</summary>
         </details>
