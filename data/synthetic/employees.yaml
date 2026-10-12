@@ -165,3 +165,26 @@ employees:
     remoteStatus: in_office
     essentialPersonnel: true
     teleworkEligible: false
+
+  # Added 2026-10-12, post-event -- Kansas City is where this project
+  # was built; added so the app has a real, familiar local facility
+  # for anyone running it on their own machine.
+  - employeeId: E1015
+    name: Morgan Ellis
+    phone: "555-0114"
+    email: morgan.ellis@example.gov
+    role: Program Technician
+    homeFacilityId: USDA-FSA-MO-KANSASCITY
+    remoteStatus: in_office
+    essentialPersonnel: false
+    teleworkEligible: true
+
+  - employeeId: E1016
+    name: Devon Marsh
+    phone: "555-0115"
+    email: devon.marsh@example.gov
+    role: Facility Manager
+    homeFacilityId: USDA-FSA-MO-KANSASCITY
+    remoteStatus: in_office
+    essentialPersonnel: true
+    teleworkEligible: false

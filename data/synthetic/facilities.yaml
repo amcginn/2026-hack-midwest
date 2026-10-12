@@ -147,6 +147,33 @@ facilities:
       facility was added -- a third distinct hazard type beyond flood
       and winter storm.
 
+  - facilityId: USDA-FSA-MO-KANSASCITY
+    name: USDA FSA Kansas City Regional Office
+    address:
+      line1: 8900 E 11th St
+      city: Kansas City
+      state: MO
+      zip: "64126"
+    coordinates:
+      lat: 39.0997
+      lon: -94.5786
+    hours: "08:00-16:30"
+    buildingType: office
+    accessibilityNotes: ground-floor ADA accessible
+    riverGaugeId: "06893000"
+    notes: >
+      Added 2026-10-12, post-event -- Kansas City is where this project
+      was built (Hack Midwest), added so anyone running the app locally
+      can see a real-time status for a location they're personally
+      familiar with, not just the demo-selected facilities. Confirmed
+      live: zero active NWS alerts at the time this facility was added
+      (Normal Operations case), real USGS/NWPS gauge (Missouri River at
+      Kansas City, site 06893000, confirmed live reading 14.33ft/
+      no_flooding), and a real nearby AQICN station (Troost, Missouri,
+      AQI 20/Good at check time). Not an Iowa facility, so Iowa DOT
+      road-conditions correctly does not apply here (see
+      sources/iowaDot.ts's isApplicable check).
+
 # Note: an earlier SC facility (Aiken County) was removed from this file.
 # It was built around a live Tornado Warning that has since cleared.
 # GA/NC flood activity observed in that region during scoping is handled
