@@ -1352,6 +1352,32 @@ go stale like the deliverable fields did before this review caught it.
       line under the posture header. Also answers an earlier open
       question ("should we show basic facility info toward the top of
       the page") -- same fix covers both.
+- [x] **Closed 2026-10-13.** Re-read of the original challenge text's
+      facility-model sentence ("location, hours, employee assignments,
+      essential-personnel flags, telework eligibility, accessibility
+      needs") found that most of that list -- employee assignments,
+      essential-personnel flags, telework eligibility, AND accessibility
+      needs -- are per-EMPLOYEE concepts, despite being filed under
+      "facility" in the sentence. essential-personnel/telework-eligible
+      were already correctly modeled on `Employee` from the start; what
+      was missing: (1) per-employee working hours when they differ from
+      the facility's posted hours (e.g. a field ranger's actual patrol
+      schedule), (2) a per-employee accessibility accommodation note,
+      distinct from `Facility.accessibilityNotes` (which describes the
+      BUILDING, e.g. "ground-floor ADA accessible" -- a legitimate,
+      separate concept, kept as-is). Added `Employee.workHours` and
+      `Employee.accessibilityNotes` -- both purely informational
+      (display-only on the roster table, under the employee's name),
+      per user: "notes are purely data-model, not something to take
+      actual action on through logic." Deliberately does not feed
+      scoring, posture, or notification wording -- consistent with the
+      project's "we make zero decisions on anyone's behalf" posture.
+      Seeded two real examples: Skylar Petrov (Pendleton, OR field
+      ranger with an earlier patrol schedule) and Devon Marsh (Kansas
+      City, MO facility manager with a mobility-accommodation note,
+      modeling the user's own example: a ramp not being de-iced is
+      grounds for a manager to approve ad hoc telework for that one
+      person without declaring a facility-wide closure).
 - [x] At least one supplementary signal — exceeded: USGS/NWPS (river
       gauge) + AQICN (air quality) + **Iowa DOT road conditions (added
       2026-10-11)**, all real/live/scored. GA 511/KDKD exist as

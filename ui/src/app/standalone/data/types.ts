@@ -38,6 +38,13 @@ export interface Employee {
   remoteStatus: RemoteStatus;
   essentialPersonnel: boolean;
   teleworkEligible: boolean;
+  /** See server/src/repository/types.ts Employee.workHours module doc
+   * for why this exists on the employee, not the facility. */
+  workHours?: string;
+  /** See server/src/repository/types.ts Employee.accessibilityNotes
+   * module doc -- purely informational, no scoring/notification
+   * logic reads this. */
+  accessibilityNotes?: string;
   notes?: string;
 }
 

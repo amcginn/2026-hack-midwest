@@ -202,6 +202,8 @@ export function getFacilityRoster(facilityId: string, date?: string): FacilityRo
         todayStatus: scheduleEntry?.status ?? employee.remoteStatus,
         scheduleNote: scheduleEntry?.locationNote,
         applicableToday: applicableIds.has(employee.employeeId),
+        workHours: employee.workHours,
+        accessibilityNotes: employee.accessibilityNotes,
       };
     }),
   };

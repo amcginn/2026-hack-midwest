@@ -276,6 +276,8 @@ app.get("/api/facilities/:facilityId/roster", (req: Request, res: Response) => {
         todayStatus: scheduleEntry?.status ?? employee.remoteStatus,
         scheduleNote: scheduleEntry?.locationNote,
         applicableToday: applicableIds.has(employee.employeeId),
+        workHours: employee.workHours,
+        accessibilityNotes: employee.accessibilityNotes,
       };
     }),
   });

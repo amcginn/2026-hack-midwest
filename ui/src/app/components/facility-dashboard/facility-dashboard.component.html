@@ -105,7 +105,15 @@
           <tbody>
             @for (e of roster.roster; track e.employeeId) {
               <tr [class.row-applicable]="e.applicableToday" [class.row-excluded]="!e.applicableToday">
-                <td>{{ e.name }}</td>
+                <td>
+                  {{ e.name }}
+                  @if (e.workHours) {
+                    <div class="employee-note">Hours: {{ e.workHours }}</div>
+                  }
+                  @if (e.accessibilityNotes) {
+                    <div class="employee-note">{{ e.accessibilityNotes }}</div>
+                  }
+                </td>
                 <td>{{ e.role }}</td>
                 <td>{{ remoteStatusLabel(e.remoteStatus) }}</td>
                 <td>

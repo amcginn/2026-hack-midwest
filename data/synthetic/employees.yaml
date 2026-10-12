@@ -146,6 +146,13 @@ employees:
     essentialPersonnel: true
     teleworkEligible: false
 
+  # workHours added 2026-10-13 -- original challenge text's facility-
+  # model sentence groups "hours" alongside essential-personnel/
+  # telework-eligible/accessibility-needs, which are per-EMPLOYEE
+  # concepts despite being filed under "facility" (see
+  # docs/project-scope.md section 7 gap-closure note). A field
+  # ranger's actual schedule often doesn't match the station's posted
+  # hours -- shown for awareness on the roster, not used in scoring.
   - employeeId: E1013
     name: Skylar Petrov
     phone: "555-0112"
@@ -155,6 +162,7 @@ employees:
     remoteStatus: in_office
     essentialPersonnel: false
     teleworkEligible: true
+    workHours: "05:30-14:00 (field patrol, earlier than station hours)"
 
   - employeeId: E1014
     name: Rowan Kessler
@@ -179,6 +187,12 @@ employees:
     essentialPersonnel: false
     teleworkEligible: true
 
+  # accessibilityNotes added 2026-10-13 -- same gap-closure as
+  # workHours above. Purely informational: lets a manager see
+  # person-specific context (e.g. a mobility accommodation) and decide
+  # case-by-case (e.g. approve ad hoc telework for just this person
+  # during a winter storm not severe enough for a facility-wide
+  # closure) without the app inferring or acting on it automatically.
   - employeeId: E1016
     name: Devon Marsh
     phone: "555-0115"
@@ -188,3 +202,4 @@ employees:
     remoteStatus: in_office
     essentialPersonnel: true
     teleworkEligible: false
+    accessibilityNotes: "Uses a mobility device; relies on the accessible ramp entrance being cleared/de-iced."

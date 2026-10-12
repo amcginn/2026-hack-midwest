@@ -18,10 +18,10 @@ export const EMPLOYEES: Employee[] = [
   { employeeId: "E1010", name: "Harper Delgado", phone: "555-0109", email: "harper.delgado@example.gov", role: "Facility Manager", homeFacilityId: "USDA-FS-MT-GREATFALLS", remoteStatus: "in_office", essentialPersonnel: true, teleworkEligible: false },
   { employeeId: "E1011", name: "Reese Alvarado", phone: "555-0110", email: "reese.alvarado@example.gov", role: "Soil Conservationist", homeFacilityId: "USDA-FSA-CA-SANDIEGO", remoteStatus: "in_office", essentialPersonnel: false, teleworkEligible: true },
   { employeeId: "E1012", name: "Jamie Okonkwo", phone: "555-0111", email: "jamie.okonkwo@example.gov", role: "Facility Manager", homeFacilityId: "USDA-FSA-CA-SANDIEGO", remoteStatus: "in_office", essentialPersonnel: true, teleworkEligible: false },
-  { employeeId: "E1013", name: "Skylar Petrov", phone: "555-0112", email: "skylar.petrov@example.gov", role: "Forestry Technician", homeFacilityId: "USDA-FS-OR-PENDLETON", remoteStatus: "in_office", essentialPersonnel: false, teleworkEligible: true },
+  { employeeId: "E1013", name: "Skylar Petrov", phone: "555-0112", email: "skylar.petrov@example.gov", role: "Forestry Technician", homeFacilityId: "USDA-FS-OR-PENDLETON", remoteStatus: "in_office", essentialPersonnel: false, teleworkEligible: true, workHours: "05:30-14:00 (field patrol, earlier than station hours)" },
   { employeeId: "E1014", name: "Rowan Kessler", phone: "555-0113", email: "rowan.kessler@example.gov", role: "District Ranger", homeFacilityId: "USDA-FS-OR-PENDLETON", remoteStatus: "in_office", essentialPersonnel: true, teleworkEligible: false },
   { employeeId: "E1015", name: "Morgan Ellis", phone: "555-0114", email: "morgan.ellis@example.gov", role: "Program Technician", homeFacilityId: "USDA-FSA-MO-KANSASCITY", remoteStatus: "in_office", essentialPersonnel: false, teleworkEligible: true },
-  { employeeId: "E1016", name: "Devon Marsh", phone: "555-0115", email: "devon.marsh@example.gov", role: "Facility Manager", homeFacilityId: "USDA-FSA-MO-KANSASCITY", remoteStatus: "in_office", essentialPersonnel: true, teleworkEligible: false },
+  { employeeId: "E1016", name: "Devon Marsh", phone: "555-0115", email: "devon.marsh@example.gov", role: "Facility Manager", homeFacilityId: "USDA-FSA-MO-KANSASCITY", remoteStatus: "in_office", essentialPersonnel: true, teleworkEligible: false, accessibilityNotes: "Uses a mobility device; relies on the accessible ramp entrance being cleared/de-iced." },
 ];
 
 export function getEmployeesByHomeFacility(facilityId: string): Employee[] {

@@ -103,6 +103,16 @@ export interface RosterEmployee {
   todayStatus: string;
   scheduleNote?: string;
   applicableToday: boolean;
+  // Per-employee working hours when they differ from the facility's
+  // posted hours (e.g. a field ranger) -- display only. See
+  // server/src/repository/types.ts Employee.workHours module doc.
+  workHours?: string;
+  // Per-employee accessibility accommodation note -- display only,
+  // never read by scoring/notification logic. See
+  // server/src/repository/types.ts Employee.accessibilityNotes
+  // module doc for why this is distinct from Facility's own
+  // accessibilityNotes (building vs. person).
+  accessibilityNotes?: string;
 }
 
 export interface FacilityRoster {

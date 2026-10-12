@@ -696,6 +696,19 @@ table {
     margin-top: 0.2rem;
   }
 
+  // Per-employee workHours/accessibilityNotes -- purely informational
+  // context under the person's name, not tied to today's schedule
+  // exception (that's .schedule-note, under the Today column
+  // instead). Neutral gray rather than the schedule-note's purple so
+  // the two aren't visually conflated as the same kind of signal.
+  .employee-note {
+    display: block;
+    font-size: 0.75rem;
+    font-style: normal;
+    color: #616161;
+    margin-top: 0.15rem;
+  }
+
   // Keep the exception note legible/visible even on grayed-out
   // excluded rows -- it's the most important text in that row (it's
   // WHY they're excluded), so it shouldn't fade along with the rest.
