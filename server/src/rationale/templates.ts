@@ -30,7 +30,7 @@ export function buildRationale(
   }
 
   if (!drivingSource) {
-    return `No active government-source hazard alert is currently on record for ${facilityName}. **Normal Operations** are recommended, but this reflects an absence of alert data rather than a confirmed "all clear" — continue monitoring, and review supplemental data below.`;
+    return `NWS was checked for ${facilityName} and has no active alert for this area right now. **Normal Operations** are recommended, but "no alert issued" is not the same as NWS actively certifying conditions are safe — continue monitoring, and review the supplemental readings below for additional context.`;
   }
 
   const postureLabel = POSTURE_LABELS[posture];
