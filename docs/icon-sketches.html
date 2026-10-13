@@ -1,0 +1,1323 @@
+<!--
+  SCRATCH FILE -- not a real deliverable, not linked from anywhere in
+  the app. Working sketches for the app icon/favicon concept.
+
+  v17 (2026-10-13): found and fixed the actual root cause of the
+  missing-notch problem (confirmed by zooming into v16's render): the
+  cloud's left profile was ALL CONVEX curves (one continuous bulge
+  into the sun), which can only ever produce a crescent, no matter how
+  the control points were tuned. A real notch needs the curve to go
+  concave -- bulge OUT, then explicitly curve back IN toward the sun's
+  center, then back OUT again -- verified with isolated test renders
+  (first attempt left a stray self-intersecting loop; second attempt,
+  with simpler non-overshooting control points, is clean). This
+  verified in<->out<->in curve is now built into the cloud shape below,
+  combined with the flat bottom edge from v16.
+
+  v17.1: user flagged a visible artifact on the cloud's left side.
+  Misdiagnosed it as the first puff segment's roundness and replaced
+  those control points -- which removed whatever artifact was there,
+  but ALSO widened the puff enough to erase the actual Pac-Man notch
+  that had been cut into the SUN's exposed shape (the thing that
+  actually mattered -- see user correction below).
+
+  v17.2: user corrected the misunderstanding: "the notch isn't in the
+  cloud. the cloud is creating a *visual* notch out of the sun." The
+  v17.1 "fix" was reverted conceptually -- re-plotted the ORIGINAL
+  (pre-v17.1) left-puff geometry with matplotlib (now installed in
+  ~/.local/lib/python3.12/site-packages, confirmed already on
+  sys.path -- `python3 -m pip install --target` works directly, no
+  venv needed) specifically rendering the EXPOSED SUN shape, not the
+  cloud silhouette alone. That confirmed the original geometry DID
+  have the correct notch cut into the sun -- the real (and only) bug
+  was a thin rendering seam where two adjacent curve segments (the
+  notch's "dip toward center" curve and the "rising right" curve
+  immediately after it) nearly retraced each other near their shared
+  point instead of flowing as one continuous curve. Fixed by merging
+  those two segments into a single curve through the dip's deepest
+  point.
+
+  v18 (2026-10-13): user clarified further -- the notch concept itself
+  (any concave in-out-in dip, in the cloud silhouette OR carved into
+  the sun) isn't what a real Pac-Man mouth looks like at all; "we need
+  to get rid of the notch in the cloud completely." Dropped the entire
+  concave-curve/notch approach. New direction: a plain cloud with
+  ALL-CONVEX edges (every curve segment bulges outward, never dips
+  toward the sun's center), simply overlapping the sun -- the exposed
+  sun forms an ordinary crescent, no V-cut, no hook, no secondary curl
+  anywhere. Three overlap-depth variants (U1 small, U2 medium, U3
+  deep), all verified via matplotlib against the sun circle before
+  writing to SVG.
+
+  v18.1 (2026-10-13): user liked U1's overlap depth/position but asked
+  for the single left puff to be split into two circles, smaller one
+  leftmost, to taper the exposed sun's crescent tip more gradually
+  instead of ending abruptly. First two attempts (plotted, not written
+  to SVG) introduced a visible cusp/seam near the bottom where the new
+  small-tip segment rejoined the flat base line -- fixed by starting
+  the path exactly at the tip puff's own base point rather than a
+  separate flat segment.
+
+  v18.2 (2026-10-13): user caught that V1/V2's "two circles" were
+  positioned at nearly the same leftmost x -- stacked, not stepped --
+  so no real taper was visible. Attempted to fix via hand-tuned curve
+  control points pulling the tip further left (still hand-built
+  Bezier paths), which reintroduced the bottom cusp artifact; fixing
+  THAT by reversing segment direction then smoothed the step back
+  into one continuous bulge, losing the taper again -- same whack-a-
+  mole pattern as v17's seam/notch issue. Broke the cycle by not
+  hand-tuning curve control points at all: plotted two REAL, separate
+  matplotlib Circle patches (not a single bezier path) with the tip
+  circle's center genuinely offset further left AND smaller radius
+  than the main puff circle, confirmed a real visible step/taper with
+  no cusp, then translated directly to actual SVG <circle> elements
+  (not a hand-built path) for the whole cloud -- circles are trivial
+  to verify correct (just center+radius, no curve-shape guessing) and
+  rendered identically to the matplotlib plot on the first try.
+
+  v19 (2026-10-13): user flagged two problems with v18.2's W1/W2: (1)
+  the flat <rect> stitched under the circles to fill gaps between
+  puffs has visible sharp corners -- reads as a slab, not a cloud --
+  and (2) the single small "tip" circle looked like a rounded nub,
+  not a tapered edge. Reference: a screenshot of stock cloud icons
+  where the bottom edge is a shallow ROUNDED bar (small corner
+  radius, not sharp) with several same-ish-sized puffs sitting on
+  top and overlapping each other continuously (no gaps, so no need to
+  hand-tune individual puff spacing) -- that combination is what
+  produces the gentle "scalloped" look, not a single big+small
+  circle pair.
+
+  Rebuilt from scratch as rect(rx)+circles (still no hand-built
+  bezier paths): swapped the sharp-corner <rect> for a rounded
+  <rect rx="2.5" ry="2.5">, and replaced the two-circle taper with
+  five overlapping puff circles of varying size (small-medium-large-
+  medium-small) sitting on top of the rounded base, continuously
+  overlapping so there's no gap/notch between adjacent puffs. Several
+  overlap depths were plotted against the sun circle with matplotlib
+  (shown as FancyBboxPatch for the base, confirmed geometrically
+  identical to a real rounded <rect>) before translating to SVG --
+  first two attempts covered too much of the sun (base box too tall,
+  cloud positioned too far left), fixed by shrinking the base height
+  and shifting the whole cloud right/down to restore a clear sun
+  crescent on the left, closer to v18.2's liked overlap depth.
+
+  v19.1 (2026-10-13): user flagged the shift wasn't enough -- the
+  rendered X1 still covered nearly all of the sun, losing the
+  Pac-Man "mouth" read entirely. Re-plotted several rightward shifts
+  of the whole puff+base group (dx=4, 6, 5 w/ dy=1) against the sun
+  circle; dx=6 and the dx=5/dy=1 variant pushed the base past the
+  viewBox's right edge (x=48), which would clip in a real render --
+  caught by checking the rightmost extent (base x+width and puff
+  cx+r) against 48 before accepting a layout, not just eyeballing
+  the plot. Settled on dx=4 with the base width and rightmost two
+  puffs trimmed slightly (base width 29.5->27.5, last puff r 4.5->4)
+  to keep the whole shape inside 0..48 with a couple units of margin,
+  restoring a clearly visible sun crescent on the left matching the
+  depth from the earlier liked W1/E layout.
+
+  v20 (2026-10-13): user corrected the whole v17-v19 direction with a
+  reference Pac-Man image: the "mouth" isn't a crescent at all (which
+  is all v17-v19 could ever produce, regardless of overlap depth/
+  position) -- it's a V-shaped WEDGE with a sharp apex at the circle's
+  CENTER, opening outward on one side, same as a pie slice removed.
+  Confirmed this requires fundamentally different geometry than
+  "cloud overlaps sun from one side," which only ever yields a smooth
+  crescent (two convex arcs) no matter how far shifted.
+
+  Rebuilt around a hybrid approach, verified at each step with
+  matplotlib before touching SVG:
+  1. Cloud puffs (plain circles, no sharp rect) placed to cover most
+     of the sun's right/center area, leaving a crescent exposed on
+     the left (same crescent concept as v19, just repositioned).
+  2. A matplotlib Wedge (true pie-slice, apex at sun center, radius
+     slightly larger than the sun's own radius to guarantee full edge
+     coverage) drawn in the sun's own yellow, on top of the cloud,
+     restoring a wedge-shaped "bite" of exposed sun through the
+     cloud -- this is what makes the cloud itself appear to carve the
+     Pac-Man mouth, rather than relying on a concave cloud outline
+     (which is what made v17's attempts so fragile).
+  First attempt had a visible single-pixel sliver at the wedge's apex
+  tip; diagnosed as a puff circle not fully reaching the exact apex
+  point (19,22), not a radius/rendering issue -- fixed by repositioning
+  one puff to sit centered closer to the true apex. Verified clean with
+  a zoomed-in high-DPI render before and after the fix. Also rebalanced
+  puff positions afterward since full-coverage puffs had crept too far
+  left, nearly erasing the crescent -- shifted the puff cluster right
+  again to restore a clearly visible sun crescent alongside the wedge.
+
+  Translated to real SVG: cloud puffs as plain <circle> elements (as
+  before), wedge mouth as a <path> using an SVG elliptical arc command
+  (M apex L arcStart A r r 0 0 1 arcEnd Z) with angle math computed
+  directly from the sun's actual center/radius -- not a hand-tuned
+  bezier curve, so it's reproducible from the same -22..22 degree wedge
+  angle used in the matplotlib check.
+
+  v21 (2026-10-13): user flagged that v20's Y1 had gone the wrong
+  direction entirely -- the wedge-mouth DID render correctly in
+  isolation, but it looked disconnected from the cloud (a yellow dart
+  floating inside/behind the blue puffs) rather than looking like the
+  cloud itself was creating the mouth. Several attempts to fix by
+  repositioning puffs/widening the wedge angle/sealing small gaps at
+  the wedge's corner points all failed the same way -- either the
+  wedge stayed buried inside the cloud (surrounded by blue on 3+
+  sides) or trying to open the wedge toward the cloud's edge
+  reintroduced tiny single-pixel slivers from puff-circle vs wedge-
+  arc boundary mismatches (two different circles crossing at a very
+  shallow angle, confirmed by zooming to 150dpi -- not a one-off
+  rendering fluke).
+
+  User provided a rough reference sketch of the actual intended
+  effect: a plain yellow sun circle, overlapped by ONE continuous
+  blue cloud silhouette (no separate wedge/arc path, no z-order
+  trick) whose irregular puffy outline happens to dip to a rough
+  point as it crosses toward the sun's center -- i.e. exactly the
+  concave-notch-in-the-cloud-outline concept from v17, which v18 had
+  wrongly abandoned as a dead end (it wasn't the concept that was
+  broken, it was the earlier circle-union attempts to approximate a
+  notch using two separate "jaw" puff circles with a gap between them
+  -- that gap is topologically a hole trapped inside the cloud,
+  because two circles can never fully close off a hole without the
+  gap's far side also being closed by cloud, which just produced the
+  same disconnected/floating-sliver island failure mode in every
+  variant (v17's original issue, and the thing v18-v20 kept
+  rediscovering from different angles without recognizing it as the
+  same root cause).
+
+  Correct fix: stop approximating the cloud as a union of separate
+  circles for this notch area. Build the cloud as ONE explicit path
+  (single moveto/lineto sequence, verified by rendering as a
+  matplotlib PathPatch) whose vertex list traces the puffy outer edge
+  then dips in a V toward the sun's center (two line segments forming
+  the notch) before continuing back out and around -- same path
+  continuously enclosing one region, so there's no second disconnected
+  loop/hole possible. Verified the topology first with a rough
+  straight-line-only version (confirmed single contiguous shape, no
+  island, clear wedge bite out of the sun) before smoothing the outer
+  puffy segments into quadratic bezier curves (each outward bulge
+  computed as the chord midpoint pushed outward along the direction
+  away from the sun's center) while keeping the notch's two inner
+  edges as straight lines for a crisp mouth corner, matching the
+  user's reference sketch's rough/angular mouth. Confirmed the exact
+  SVG path string (M/Q/L/Z commands) renders identically by parsing
+  it back into a matplotlib Path and re-rendering, at both full and
+  actual 96x96 icon scale, before writing it into the markup below.
+
+  v22 (2026-10-13): user flagged v21's Z1 render had THREE visible
+  sharp corners (one where the first/second puff bulges met, one on
+  the lower-right puff seam, plus the intended notch) -- didn't match
+  the Pac-Man reference AT ALL, which has exactly one hard edge (the
+  wedge) and is otherwise perfectly round. Root cause: the "smooth"
+  quadratic bezier bumps generated in v21 weren't actually tangent-
+  continuous at their shared vertices -- each Q curve was computed
+  independently per segment with its own outward-pushed control
+  point, so adjacent curves met at a vertex without matching slope,
+  producing a visible kink. Treating a hand-built sequence of
+  independent curve segments as "smooth" without checking tangent
+  continuity was the mistake -- matplotlib rendering the path
+  correctly isn't the same as the path actually being smooth.
+
+  First fix attempt: replaced the whole cloud outline with a proper
+  parametric closed curve (circle radius perturbed by a sine wave,
+  guaranteed continuously smooth by construction) plus straight notch
+  lines. This WAS genuinely smooth (confirmed no corners in render),
+  but overcorrected -- the notch became nearly invisible at both full
+  and icon scale because the sine-bump amplitude/cloud overlap wasn't
+  deep enough to carve a clearly visible wedge once blended into a
+  continuously curving edge.
+
+  Root cause of the whole v20-v21-v22-first-attempt back-and-forth:
+  overcomplicating the cloud's own outline to try to produce the
+  notch, instead of separating concerns like v20 originally did
+  (wedge as its own shape layered on a simple cloud) -- but v20's
+  actual bug was never the wedge-overlay concept, it was that the
+  cloud wrapped around 3+ sides of the sun, isolating the wedge from
+  the crescent. Fixed by going back to the wedge-overlay approach
+  with a DELIBERATELY SIMPLE cloud: just 3 overlapping plain circles,
+  positioned only to the upper-right (matching the user's original
+  rough reference image almost exactly), not wrapping around the sun.
+  Wedge (same arc-based path as v20, apex at sun center, radius
+  slightly past the sun's own) sits on top, now safely with its outer
+  corners landing inside the puffs' overlap region instead of at a
+  puff boundary -- verified seam-free via a 150dpi zoom at the apex,
+  and confirmed the full composition reads correctly as a clean round
+  sun + simple round cloud + single sharp wedge mouth at both full and
+  actual 96x96 icon scale before writing the final SVG (circles plus
+  one arc path, matching the verified geometry exactly).
+
+  v23 (2026-10-13): user clarified the whole v17-v22 pursuit of a
+  literal wedge/notch was based on a misread. Shared an actual MS
+  Paint sketch of the intended idea: sun mostly intact and round,
+  cloud is a plain smooth blob overlapping it fairly deeply (an
+  actual visible bite, not a thin crescent), and the jagged/notched
+  look in the sketch was purely an artifact of drawing with a mouse
+  freehand rather than real shape objects -- NOT an intentional
+  design element. The "Pac-Man" allusion is meant to come from the
+  app's name and the general idea of a cloud biting into the sun,
+  not from matching Pac-Man's precise wedge-to-center geometry.
+
+  Correct target: a NORMAL smooth puffy cloud (plain overlapping
+  circles, as in the very first v18-era attempts), positioned with
+  deeper sun overlap than those early versions used, so the visible
+  exposed-sun shape reads as a clear "bite" rather than a thin sliver
+  crescent -- no deliberate notch, no wedge, no jagged edge of any
+  kind. First attempt at this re-introduced a trapped sliver (one
+  puff's gap not fully overlapping its neighbor) -- fixed by using
+  fewer, larger, more generously overlapping puffs (4 big circles
+  instead of 6-7 smaller ones) so there's no room for small coverage
+  gaps. Verified clean (no sliver) and the overlap depth/cloud shape
+  at both full detail and actual 96x96 icon scale before writing it
+  into the markup.
+
+  v24 (2026-10-13): user clarified "crescent" more precisely after
+  seeing BB1 -- not objecting to the unavoidable two-arc exposed-sun
+  shape in general, but to BB1's left edge being ONE single smooth
+  convex bulge with no character, so the exposed sun reads as plain
+  "two overlapping circles" with no visible mouth-like dip. The
+  user's original paint sketch shows a distinct soft INWARD point
+  where the cloud's silhouette dips in briefly as it crosses the sun
+  -- gentler/rounder than the v17-v22 sharp wedge attempts, but still
+  a real visible dip, not a single uninterrupted bulge.
+
+  Realized this dip can come from the NATURAL VALLEY between two
+  adjacent overlapping puff circles (the same mechanism that gives
+  the reference bumpy-cloud icons their scalloped top edge) rather
+  than from a deliberately engineered notch/wedge/jagged path.
+  Positioned one puff reaching in from upper-left and one from
+  lower-left (not fully merged with each other), with body puffs to
+  the right -- the gap between the two reaching puffs creates a
+  smooth round dip right where the cloud crosses the sun. Verified
+  clean (round dip, no sliver, no sharp corners) at both full detail
+  and 96x96 icon scale via matplotlib before adding this as a new
+  card (previous reply mistakenly described this candidate in prose
+  with only a verification screenshot, without actually writing it
+  into the markup -- correcting that here).
+
+  v25 (2026-10-13): user clarified yet again after seeing CC1 -- the
+  problem wasn't the dip shape, it was that BB1/CC1 both cover a
+  thick, roughly UNIFORM depth of the sun across their whole overlap
+  width (reads as a slab/mostly-merged shape). The reference icons
+  the user keeps pointing back to all show one specific trait: the
+  cloud's covering depth is clearly SMALLER at the far left (near the
+  sun's edge) and grows toward the center -- i.e. a tapered WEDGE of
+  coverage, not a uniform bite, and specifically NOT a flat straight-
+  edged triangle either (previous wedge-path attempts in v20-22 were
+  explicitly geometric/flat-sided, which is also wrong). U1 (the very
+  first attempt, kept as the reference card this whole time) was
+  actually closer to the target because its cloud only lightly
+  grazed the sun with a small puff at one end.
+
+  Rebuilt with puffs arranged in roughly one row, sized small-to-large
+  from left to right (tiny ~4.5 radius tip puff right at the sun's
+  edge, growing to ~8.5 radius by center/right) -- this makes the
+  cloud's covering depth into the sun increase gradually across the
+  overlap, producing a genuinely tapered wedge shape in the exposed
+  sun (asymmetric point, not a uniform crescent or thick slab), using
+  only plain overlapping circles (no hand-built path, no notch/valley
+  mechanism). First attempt had the puff row positioned too high
+  above the sun's vertical center, so it mostly cleared the sun's
+  upper area rather than cutting into its body -- fixed by centering
+  the row on the sun's own vertical middle. Verified the taper is
+  visible at both full detail and 96x96 icon scale before adding it
+  as a new card.
+
+  v26 (2026-10-13): user confirmed DD1's tapered-wedge direction is
+  correct, asked for two refinements: (1) squish the cloud vertically
+  -- it's taller than it needs to be -- and (2) give it a flat (or
+  nearly flat) bottom edge, since real cloud icons typically have one.
+  Reduced puff radii slightly and pulled their y-centers closer
+  together to shrink overall height, then added a flat rounded base
+  bar (FancyBboxPatch equivalent, small corner radius) spanning the
+  puffs' width underneath them to flatten the bottom edge, matching
+  the reference cloud icons' typical silhouette. Verified the taper
+  is still clearly visible (not lost in the squish) at both full
+  detail and 96x96 icon scale before adding as a new card.
+
+  v27 (2026-10-13): user supplied actual brand colors -- green
+  #005941, blue #004785 -- replacing the placeholder #2e7d32/#1aa7ec
+  swatches used throughout all prior versions. Also flagged the cloud
+  had grown taller again and the bottom-left edge looked odd with a
+  visible notch/gap. Root cause of the notch: the base bar's left
+  edge (x=21) started to the right of the tip puff's own left edge
+  (x=17, since a puff's bounding extent is cx-r), leaving a gap
+  between the tip puff's lower-left arc and the base bar with nothing
+  filling it -- same category of bug as the earlier right-side
+  clipping issue, just on the opposite side and axis (coverage gap
+  vs canvas-edge clipping). Fixed by widening the base bar to start
+  at the tip puff's actual left edge, verified algebraically (base
+  left edge <= min puff left edge) rather than just eyeballing it.
+  Also shrank puff radii and tightened y-spacing further for a
+  noticeably shorter cloud than v26's EE1. Verified clean (flat
+  bottom, no gap/notch) at both full detail and 96x96 icon scale,
+  with the new brand colors applied, before writing the final card.
+
+  v28 (2026-10-13): user flagged FF1's tip puff and the next puff
+  had nearly aligned left edges once accounting for the tip's
+  smaller radius, so the leftmost point looked blunt/doubled instead
+  of a single clean tip. Also asked to shift the whole cloud right
+  slightly for more exposed sun crescent. Fixed by shrinking the tip
+  puff further (r=3->2.5) and shifting the entire cluster right by
+  1.5 units, re-verifying algebraically that each puff's left edge
+  (cx-r) is strictly greater than the previous puff's, so only the
+  tip puff defines the leftmost point -- and keeping the base bar's
+  left edge matched exactly to the tip puff's left edge (same
+  no-notch check from v27). Verified in bounds and at 96x96 icon
+  scale before writing the new card.
+
+  v30 (2026-10-13): user flagged that HH1 had overwritten the card
+  in place instead of adding a new one for comparison, and that
+  pulling the tip puff left in HH1 made its circle stop overlapping
+  puff #2 (sum of radii 7.0 < center distance 7.07 at HH1's
+  coordinates), leaving a thin sliver of exposed sun poking through
+  between them -- a real coverage gap, not a stylistic dip. Restored
+  HH1 to its original pre-edit state and added II1 as a new card:
+  kept the tip puff's x close enough to puff #2 to guarantee a
+  positive overlap margin (verified algebraically: 0.68 > 0) and
+  instead dropped the tip puff's y toward the base, separating the
+  "size step" visual from the "x gap" that caused the sliver. Also
+  removed several earlier discarded iterations (U1, BB1, CC1, DD1,
+  EE1 and their dark variants) that were fully superseded by FF1's
+  brand-color/no-notch fix before the current tip-puff problem even
+  existed, keeping FF1/GG1/HH1/II1 as the direct comparison lineage
+  relevant to this issue. Verified clean (no gap/sliver, base bar's
+  left edge <= tip puff's actual left edge) via matplotlib before
+  writing the final II1 card.
+
+  v29 (2026-10-13): user pointed out GG1's tip puff and puff #2
+  still looked nearly even in the render, despite the tip puff's
+  left-edge coordinate (cx-r) being numerically smaller. Root cause:
+  a smaller numeric left-edge value doesn't guarantee a visually
+  distinct step if the next puff is much bigger -- the bigger puff's
+  own curve bulges left too, so the two can read as similar even
+  with a real (but small) numeric gap between their left edges.
+  Fixed by pulling the tip puff further left independent of the rest
+  of the cluster (left edge 22.5 -> 17.5) for a clearly bigger visual
+  step, re-widening the base bar to still match the tip's new left
+  edge. This reintroduced a small visible dip between the tip puff
+  and puff #2 (a thin sliver of exposed sun in the valley between
+  them) -- checked at actual 96x96 icon scale and confirmed it reads
+  as a natural scalloped dip between cloud puffs, not a defect,
+  consistent with the reference cloud icons' bumpy top edges.
+
+  Delete this file once a final icon design is chosen and built as the
+  real favicon under ui/public/.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>FacMan icon sketches v30 -- stepped tip, no gap</title>
+<style>
+  body { font-family: -apple-system, sans-serif; background: #f4f4f4; padding: 2rem; }
+  .grid { display: flex; flex-wrap: wrap; gap: 2rem; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; width: 240px; text-align: center; }
+  .card h3 { font-size: 0.85rem; margin: 0.5rem 0 0.25rem; }
+  .card p { font-size: 0.72rem; color: #666; margin: 0; }
+  .swatches { display: flex; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
+  .swatches div { display: flex; align-items: center; justify-content: center; }
+  .big { width: 96px; height: 96px; }
+  .med { width: 48px; height: 48px; }
+  .small { width: 24px; height: 24px; }
+  .tiny { width: 16px; height: 16px; }
+  .bg-light { background: #fff; border: 1px solid #eee; }
+  .bg-dark { background: #16324a; }
+</style>
+</head>
+<body>
+<h1 style="font-size:1.1rem;">FacMan icon sketches v30 -- stepped tip, no gap</h1>
+
+<div class="grid">
+
+  <!-- FF1: brand colors (#005941 green, #004785 blue) applied.
+       Shorter than EE1 (an earlier, now-removed squished-cloud
+       variant; smaller puffs, tighter y-spacing), and the
+       base bar's left edge widened to actually start at the tip
+       puff's own left edge (cx-r, not just visually near it) so
+       there's no gap/notch between the tip puff and the base. -->
+  <div class="card">
+    <h3>FF1. Brand colors, shorter, no notch</h3>
+    <p>Brand colors applied (green #005941, blue #004785). Shorter overall than EE1, and the base bar now starts at the tip puff's actual left edge so there's no gap/notch on the bottom-left.</p>
+    <div class="swatches">
+      <div class="bg-light big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="17" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="20" cy="22.5" r="3"/>
+            <circle cx="24.5" cy="21.5" r="4.5"/>
+            <circle cx="30" cy="20.5" r="6"/>
+            <circle cx="36" cy="21" r="5.5"/>
+            <circle cx="40.5" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light med">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="17" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="20" cy="22.5" r="3"/>
+            <circle cx="24.5" cy="21.5" r="4.5"/>
+            <circle cx="30" cy="20.5" r="6"/>
+            <circle cx="36" cy="21" r="5.5"/>
+            <circle cx="40.5" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light small">
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="17" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="20" cy="22.5" r="3"/>
+            <circle cx="24.5" cy="21.5" r="4.5"/>
+            <circle cx="30" cy="20.5" r="6"/>
+            <circle cx="36" cy="21" r="5.5"/>
+            <circle cx="40.5" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light tiny">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="17" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="20" cy="22.5" r="3"/>
+            <circle cx="24.5" cy="21.5" r="4.5"/>
+            <circle cx="30" cy="20.5" r="6"/>
+            <circle cx="36" cy="21" r="5.5"/>
+            <circle cx="40.5" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- FF1 on a dark background. -->
+  <div class="card">
+    <h3>FF1 on dark background</h3>
+    <p>Checking FF1's brand-color cloud against a dark tab bar / dark-mode theme.</p>
+    <div class="swatches">
+      <div class="bg-dark big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="17" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="20" cy="22.5" r="3"/>
+            <circle cx="24.5" cy="21.5" r="4.5"/>
+            <circle cx="30" cy="20.5" r="6"/>
+            <circle cx="36" cy="21" r="5.5"/>
+            <circle cx="40.5" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- GG1: FF1 shifted right 1.5 units for more exposed crescent,
+       tip puff shrunk further (r=3->2.5) so each puff's left edge
+       (cx-r) is strictly past the previous one's -- only the tip
+       puff defines the leftmost point, no blunt/doubled edge. Base
+       bar's left edge kept matched to the tip puff's left edge. -->
+  <div class="card">
+    <h3>GG1. Single clean tip point</h3>
+    <p>Shifted right slightly for more exposed sun crescent. Tip puff shrunk and re-verified so it alone defines the leftmost point -- no more blunt/doubled edge where it previously aligned with the next puff.</p>
+    <div class="swatches">
+      <div class="bg-light big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="22.5" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light med">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="22.5" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light small">
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="22.5" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light tiny">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="22.5" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- GG1 on a dark background. -->
+  <div class="card">
+    <h3>GG1 on dark background</h3>
+    <p>Checking GG1's refined tip point against a dark tab bar / dark-mode theme.</p>
+    <div class="swatches">
+      <div class="bg-dark big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="22.5" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- JJ1: GG1's remaining yellow sliver (user confirmed via
+       screenshot it was still visible) wasn't a step-size problem --
+       it's that the tip circle's left edge (cx-r) was made exactly
+       TANGENT to the base rect's left edge (both = 20), rather than
+       genuinely inside it. A circle curves away from a straight line
+       it's tangent to, so right at that corner (the base's hard
+       90-degree corner meeting the circle's smoothly curving edge) a
+       thin wedge of sun shows through uncovered -- confirmed by a
+       dpi-250 zoomed matplotlib render of the untouched GG1 geometry
+       (min(x - base_x) along the tip circle's lower-left arc was a
+       razor-thin but nonzero positive margin at the sampled points,
+       yet the rendered corner still showed a gap -- the tangent
+       point itself is the zero-margin case the sampling didn't land
+       exactly on).
+
+       Fix: moved ONLY the tip circle right (cx 22.5->23, so its left
+       edge is 20.5, strictly INSIDE the base's left edge of 20) so
+       its boundary is actually covered by the base rect instead of
+       just touching it at one point. Puff #2 (cx=27, r=4.5, the
+       larger circle directly above/right of the tip) and every other
+       puff are untouched -- still the exact GG1 coordinates. Only
+       the small tip circle moved. Verified by sampling points along
+       the tip circle's lower-left arc and confirming all of them
+       land strictly inside (not just on) the base rect, both in a
+       tight zoom and the full 48x48 composition, before writing to
+       SVG. -->
+  <div class="card">
+    <h3>JJ1. Tip circle moved right, sliver closed</h3>
+    <p>GG1's remaining yellow sliver wasn't about the step size -- the small tip circle's left edge was exactly tangent to the base bar's corner, and a circle curves away from a straight line at a tangent point, leaving a thin uncovered wedge of sun at that corner. Fixed by moving only the small tip circle right (cx 22.5&#8594;23) so it's genuinely inside the base rect's edge, not just touching it. The larger circle above it (puff #2) and the base's left edge are unchanged from GG1.</p>
+    <div class="swatches">
+      <div class="bg-light big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light med">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light small">
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light tiny">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- JJ1 on a dark background. -->
+  <div class="card">
+    <h3>JJ1 on dark background</h3>
+    <p>Checking JJ1's closed-sliver tip point against a dark tab bar / dark-mode theme.</p>
+    <div class="swatches">
+      <div class="bg-dark big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="20" y="23.5" width="25" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="22.5" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="6"/>
+            <circle cx="38.5" cy="21" r="5.5"/>
+            <circle cx="43" cy="22.5" r="4"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- KK1: user shifted the base rect's left edge right (20->21.5,
+       1.5 units), which I initially misread as reopening JJ1's
+       tangent-gap sliver and "corrected" back to ~20, erasing the
+       actual change. Rendered the user's exact, unmodified numbers
+       and looked at the result: this isn't a gap-closing fix at
+       all, it's a genuinely different composition -- shifting the
+       whole puff row right so the cloud only lightly grazes the
+       sun's edge instead of cutting deep into it, closer to the
+       original U1 concept. No coverage-gap issue exists at this
+       overlap depth. -->
+  <div class="card">
+    <h3>KK1. Lighter graze, cloud shifted right</h3>
+    <p>Shifted the whole puff row right so the cloud only lightly grazes the sun's edge, rather than cutting deep into it like JJ1.</p>
+    <div class="swatches">
+      <div class="bg-light big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light med">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light small">
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light tiny">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <rect width="48" height="48" fill="#f4f4f0"/>
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- KK1 on a dark background. -->
+  <div class="card">
+    <h3>KK1 on dark background</h3>
+    <p>Checking KK1's lighter graze against a dark tab bar / dark-mode theme.</p>
+    <div class="swatches">
+      <div class="bg-dark big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect x="0" y="38" width="48" height="10" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#fde100"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- MM1: three concrete fixes, each separately verified before
+       combining:
+
+       1. Background: dropped the hardcoded #f4f4f0/dark card rects
+          entirely for the actual icon markup -- those were only ever
+          preview-grid scaffolding, not a real decision about the
+          icon's own background. Real asset should be transparent so
+          it adapts to whatever surrounds it (browser tab chrome, OS
+          theme, app shell), not force a background color.
+
+       2. Sun color: swapped #fde100 (arbitrary, no relationship to
+          the brand colors) for #cd9c00, which the user derived as an
+          actual tetradic-family color from the brand blue (#004785)
+          -- confirmed by checking HLS: cd9c00 and ffd44d share the
+          same ~45.6deg hue, cd9c00 differing only in lightness (0.40
+          vs 0.65), i.e. a legitimate monochromatic pair as the user
+          described. Checked contrast ratios before accepting it:
+          fde100 vs white was only 1.32:1 (would nearly vanish on a
+          plain light tab bar, the icon's primary real-world context,
+          as opposed to the dark preview-card background that had
+          been flattering it this whole session) -- cd9c00 nearly
+          doubles that to 2.51:1 and renders clearly legible against
+          actual white in a real cairosvg render (not just eyeballed).
+          Kept the palette at exactly 3 colors (green/blue/this one
+          yellow) rather than adding a 4th stroke/outline color to fix
+          contrast, per the user's "keep it to as few colors as
+          possible" guidance.
+
+       3. Green band height: user supplied the actual USDA symbol SVG
+          (not the PNG, which turned out to have padding/card-shadow
+          baked in that threw off an earlier row-based pixel estimate
+          -- correcting that mistake here). Measured the real path
+          data directly: viewBox height 100.59, solid green block
+          spans y=60.32 to the bottom edge -> 40.0% of total height,
+          not the ~11% a naive PNG-row read suggested. Current icon's
+          green band was only 21% (10/48) -- grew it to 19.2/48 (40%,
+          matching the measured ratio). Checked whether to also shrink
+          the sun/cloud proportionally to fit a smaller leftover sky
+          area (rendered and rejected -- made the whole composition
+          read as too small/timid) versus keeping the sun/cloud at
+          their original size and letting the taller green band
+          naturally overlap the sun's lower edge by ~7 units (rendered
+          and preferred -- reads as an intentional "sun partially over
+          the horizon" moment, reinforcing the early-in-the-day timing
+          implied by the app's actual decision window, without having
+          to touch the sun's vertical position directly). Verified
+          legible at 96x96 down to actual 16x16 favicon scale with
+          cairosvg before writing this card. -->
+  <div class="card">
+    <h3>MM1. Transparent bg, brand-derived yellow, USDA-matched green ratio</h3>
+    <p>Three fixes: (1) transparent background instead of the hardcoded preview-card color, (2) sun color swapped to #cd9c00 -- a real tetradic derivative of the brand blue with much better contrast against white than the old arbitrary yellow, (3) green band grown to 40% of height, matching the actual USDA symbol's measured proportions (verified from its real SVG path data, not the padded PNG). Sun/cloud size unchanged; the taller green now naturally overlaps the sun's lower edge, read as "sun over the horizon."</p>
+    <div class="swatches">
+      <div class="bg-light big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#cd9c00"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light med">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#cd9c00"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light small">
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#cd9c00"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+      <div class="bg-light tiny">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#cd9c00"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- MM1 on a dark background. -->
+  <div class="card">
+    <h3>MM1 on dark background</h3>
+    <p>Checking MM1 against a dark tab bar / dark-mode theme (background is still transparent in the actual SVG -- this card's dark square is just the preview wrapper).</p>
+    <div class="swatches">
+      <div class="bg-dark big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#cd9c00"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- MM1 on a white background, the real-world default for most browser tabs/light-theme chrome. -->
+  <div class="card">
+    <h3>MM1 on plain white background</h3>
+    <p>The actual contrast-sensitive case -- most favicon contexts are light, not dark. Confirms #cd9c00 stays legible here, unlike the old #fde100.</p>
+    <div class="swatches">
+      <div class="bg-light big" style="background:#ffffff;">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+          <circle cx="19" cy="22" r="14" fill="#cd9c00"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- NN1: user correctly flagged three real problems with MM1 that
+       I'd missed by only checking isolated contrast numbers instead
+       of looking at the whole composition:
+
+       1. #cd9c00 reads as dark/burnt mustard at actual icon size, not
+          as a sun -- the higher contrast-ratio win wasn't worth the
+          loss of actually looking like sunlight. Checked other
+          lightness steps along the SAME brand-derived hue (45.6deg,
+          same hue family as cd9c00/ffd44d) rather than picking an
+          unrelated yellow: L=0.40 (cd9c00, too dark), L=0.65
+          (ffd44d, too pale), L=0.50 (#ffc200) landed as the visually
+          correct "actual sun" middle ground. Contrast against white
+          is lower than cd9c00's (1.62:1 vs 2.51:1) -- a real
+          tradeoff, noted rather than hidden, but favicon tab chrome
+          is rarely pure white and the shape has its own silhouette
+          against any background, so prioritized looking like a sun
+          over the raw ratio here.
+
+       2. "Sun is in front of the horizon" was an actual bug, not a
+          style note -- MM1 painted the sun circle BEFORE the green
+          rect in SVG draw order, so the green painted over/in front
+          of the sun's lower portion instead of the sun appearing to
+          sit behind/at the horizon. Fixed by moving the green rect to
+          last in draw order so it correctly occludes the sun's
+          bottom edge -- confirmed visually before combining with any
+          other change, isolating this fix from the color question.
+
+       3. Cloud sat close to the ground once the green band grew to
+          40% -- rendered the cloud+sun group at three lift amounts
+          (0, -2, -3.5) side by side rather than guessing one value;
+          -2 was the right balance (clearance without floating the
+          sun disconnected from the horizon). Applied as a uniform
+          shift to the whole sun+cloud group, not just the cloud
+          alone, to preserve their existing relative composition.
+
+       Verified legible at 16x16 before writing this card. -->
+  <div class="card">
+    <h3>NN1. Brighter brand-derived yellow, correct draw order, cloud clearance</h3>
+    <p>Fixes all three issues found in MM1: (1) #ffc200 instead of #cd9c00 -- same brand-derived hue family, but a lightness step that actually looks like a sun instead of burnt mustard, (2) green now painted after the sun so it correctly occludes the sun's lower edge instead of the sun appearing to sit in front of the horizon, (3) the sun+cloud group lifted 2 units for breathing room above the taller green band.</p>
+    <div class="swatches">
+      <div class="bg-light big" style="background:#ffffff;">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <circle cx="19" cy="20" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="21" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="21" r="2.5"/>
+            <circle cx="27" cy="19.5" r="4.5"/>
+            <circle cx="32.5" cy="18.5" r="5.5"/>
+            <circle cx="38.5" cy="19" r="5"/>
+            <circle cx="43" cy="20.5" r="3.25"/>
+          </g>
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light med" style="background:#ffffff;">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle cx="19" cy="20" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="21" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="21" r="2.5"/>
+            <circle cx="27" cy="19.5" r="4.5"/>
+            <circle cx="32.5" cy="18.5" r="5.5"/>
+            <circle cx="38.5" cy="19" r="5"/>
+            <circle cx="43" cy="20.5" r="3.25"/>
+          </g>
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light small" style="background:#ffffff;">
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <circle cx="19" cy="20" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="21" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="21" r="2.5"/>
+            <circle cx="27" cy="19.5" r="4.5"/>
+            <circle cx="32.5" cy="18.5" r="5.5"/>
+            <circle cx="38.5" cy="19" r="5"/>
+            <circle cx="43" cy="20.5" r="3.25"/>
+          </g>
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light tiny" style="background:#ffffff;">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <circle cx="19" cy="20" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="21" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="21" r="2.5"/>
+            <circle cx="27" cy="19.5" r="4.5"/>
+            <circle cx="32.5" cy="18.5" r="5.5"/>
+            <circle cx="38.5" cy="19" r="5"/>
+            <circle cx="43" cy="20.5" r="3.25"/>
+          </g>
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- NN1 on a dark background. -->
+  <div class="card">
+    <h3>NN1 on dark background</h3>
+    <p>Checking NN1 against a dark tab bar / dark-mode theme.</p>
+    <div class="swatches">
+      <div class="bg-dark big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <circle cx="19" cy="20" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="21" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="21" r="2.5"/>
+            <circle cx="27" cy="19.5" r="4.5"/>
+            <circle cx="32.5" cy="18.5" r="5.5"/>
+            <circle cx="38.5" cy="19" r="5"/>
+            <circle cx="43" cy="20.5" r="3.25"/>
+          </g>
+          <rect x="0" y="28.8" width="48" height="19.2" fill="#005941"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- OO1: corrected the green-band ratio. The 40% figure used in
+       MM1/NN1 was measured from USDA's actual SVG at its NATIVE
+       147.03x100.59 (non-square) viewBox -- comparing that directly
+       to our square 48x48 icon canvas wasn't apples-to-apples. User
+       asked what the ratio becomes if the viewBox is squared to
+       147.03x147.03 by adding vertical space (padding), with the
+       logo geometry itself completely unchanged -- i.e. the green
+       band's absolute height stays fixed while the total canvas
+       height grows to match the width. Recomputed on that basis:
+       solid green block height (40.27, unchanged) / new square total
+       height (147.03) = 27.4%, not 40%. This also happens to land
+       almost exactly on the 28% this session had already converged
+       on by eye in the side-by-side comparison two turns ago --
+       a good sign the visual judgment and the corrected math agree.
+
+       Rebuilt with green_h = 48*0.2739 = 13.15 (27.4% of 48).
+       Re-checked whether the sun+cloud group still needed NN1's +2
+       lift now that the green band is much shorter than NN1's 19.2 --
+       rendered no-lift, +1, and -1 side by side; no-lift already had
+       comfortable clearance (the shorter band naturally leaves more
+       sky room), so NN1's lift was dropped rather than reused
+       unexamined. Kept NN1's other two fixes as-is: #ffc200 sun
+       color and green painted last in draw order so it correctly
+       occludes the sun's bottom edge. Verified legible at 16x16. -->
+  <div class="card">
+    <h3>OO1. Corrected green ratio (27.4%, square-canvas basis)</h3>
+    <p>Recomputed the green band's target height against a properly squared version of the USDA reference (padding added to make it square, geometry unchanged) rather than its native wide aspect ratio -- comes out to 27.4%, not the 40% used in MM1/NN1. Also matches the ~28% this session had already settled on by eye. Sun/cloud lift from NN1 dropped since the shorter band no longer needs it.</p>
+    <div class="swatches">
+      <div class="bg-light big" style="background:#ffffff;">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <circle cx="19" cy="22" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light med" style="background:#ffffff;">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle cx="19" cy="22" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light small" style="background:#ffffff;">
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <circle cx="19" cy="22" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light tiny" style="background:#ffffff;">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <circle cx="19" cy="22" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- OO1 on a dark background. -->
+  <div class="card">
+    <h3>OO1 on dark background</h3>
+    <p>Checking OO1 against a dark tab bar / dark-mode theme.</p>
+    <div class="swatches">
+      <div class="bg-dark big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <circle cx="19" cy="22" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="23" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="23" r="2.5"/>
+            <circle cx="27" cy="21.5" r="4.5"/>
+            <circle cx="32.5" cy="20.5" r="5.5"/>
+            <circle cx="38.5" cy="21" r="5"/>
+            <circle cx="43" cy="22.5" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- PP1: user flagged the 1.15-unit overlap between the sun and
+       the new, shorter green band (OO1) as marginal -- too small to
+       read as a deliberate "sun behind the horizon" composition, so
+       close to zero it could look like a near-miss/mistake instead.
+       Measured the actual overlap before guessing: sun bottom edge
+       (36) minus green top (34.85) = 1.15, about 4% of the sun's own
+       diameter.
+
+       Rendered four overlap depths side by side (1.15 current, 3, 5,
+       7) to find where it reads as clearly intentional without
+       eating too much into the sun's visual presence or crowding the
+       cloud (the same "too much green" risk flagged earlier in the
+       session, now reframed as "too much overlap" at the sun level).
+       3 units was the first one that read unambiguously as
+       intentional -- shifted the whole sun+cloud group down by 1.85
+       units (dy = (green_top+3-sun_r) - original_sun_cy) to hit that
+       target exactly, verified algebraically rather than eyeballed.
+       Verified legible at 16x16 before writing this card. -->
+  <div class="card">
+    <h3>PP1. Intentional 3-unit sun/horizon overlap</h3>
+    <p>OO1's sun/horizon overlap was only 1.15 units (~4% of the sun's diameter) -- too marginal to read as deliberate. Shifted the sun+cloud group down slightly for a clear 3-unit overlap, confirmed against three other depths (3/5/7) to land on the one that looks intentional without eating too far into the sun or crowding the cloud.</p>
+    <div class="swatches">
+      <div class="bg-light big" style="background:#ffffff;">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <circle cx="19" cy="23.85" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="24.85" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="24.85" r="2.5"/>
+            <circle cx="27" cy="23.35" r="4.5"/>
+            <circle cx="32.5" cy="22.35" r="5.5"/>
+            <circle cx="38.5" cy="22.85" r="5"/>
+            <circle cx="43" cy="24.35" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light med" style="background:#ffffff;">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle cx="19" cy="23.85" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="24.85" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="24.85" r="2.5"/>
+            <circle cx="27" cy="23.35" r="4.5"/>
+            <circle cx="32.5" cy="22.35" r="5.5"/>
+            <circle cx="38.5" cy="22.85" r="5"/>
+            <circle cx="43" cy="24.35" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light small" style="background:#ffffff;">
+        <svg width="24" height="24" viewBox="0 0 48 48">
+          <circle cx="19" cy="23.85" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="24.85" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="24.85" r="2.5"/>
+            <circle cx="27" cy="23.35" r="4.5"/>
+            <circle cx="32.5" cy="22.35" r="5.5"/>
+            <circle cx="38.5" cy="22.85" r="5"/>
+            <circle cx="43" cy="24.35" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+      <div class="bg-light tiny" style="background:#ffffff;">
+        <svg width="16" height="16" viewBox="0 0 48 48">
+          <circle cx="19" cy="23.85" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="24.85" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="24.85" r="2.5"/>
+            <circle cx="27" cy="23.35" r="4.5"/>
+            <circle cx="32.5" cy="22.35" r="5.5"/>
+            <circle cx="38.5" cy="22.85" r="5"/>
+            <circle cx="43" cy="24.35" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- PP1 on a dark background. -->
+  <div class="card">
+    <h3>PP1 on dark background</h3>
+    <p>Checking PP1 against a dark tab bar / dark-mode theme.</p>
+    <div class="swatches">
+      <div class="bg-dark big">
+        <svg width="96" height="96" viewBox="0 0 48 48">
+          <circle cx="19" cy="23.85" r="14" fill="#ffc200"/>
+          <g fill="#004785">
+            <rect x="21.5" y="24.85" width="24" height="3" rx="1.5" ry="1.5"/>
+            <circle cx="23" cy="24.85" r="2.5"/>
+            <circle cx="27" cy="23.35" r="4.5"/>
+            <circle cx="32.5" cy="22.35" r="5.5"/>
+            <circle cx="38.5" cy="22.85" r="5"/>
+            <circle cx="43" cy="24.35" r="3.25"/>
+          </g>
+          <rect x="0" y="34.85" width="48" height="13.15" fill="#005941"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
